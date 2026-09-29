@@ -29,8 +29,8 @@ import 'package:zai_x/widgets/status/app_loadding_widget.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:windows_single_instance/windows_single_instance.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:zai_x/app/single_instance.dart';
 import 'package:zai_x/services/subscribe_notify_service.dart';
 import 'package:zai_x/services/subscribe_notify_scheduler.dart';
 
@@ -51,13 +51,7 @@ void callbackDispatcher() {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   if (Platform.isWindows) {
-    await WindowsSingleInstance.ensureSingleInstance(
-      [],
-      "com.xycz.zmhx",
-      onSecondWindow: (args) {
-        Log.logPrint(args);
-      },
-    );
+    await ensureSingleInstance();
   }
   await Hive.initFlutter();
   //初始化服务
