@@ -250,18 +250,32 @@ class WindowsSelfUpdate {
     throw StateError('update helper did not start');
   }
 
-  /// 读取并清掉上次更新留下的结果与暂存档；没有更新过就回传 null
-  Future<WindowsUpdateOutcome?> takeOutcome() async {
+  /// 读取并清掉上次更新留下的结果与暂存档；没有更新过就回传 null。
+  ///
+  /// 暂存资料夹是所有安装共用的：结果属于别的安装资料夹时原封不动留给那一份；
+  /// 成功但版本和 [currentVersion] 不同（例如重新开启的是旧版），视为过时不显示。
+  Future<WindowsUpdateOutcome?> takeOutcome({String? currentVersion}) async {
     if (!await workDir.exists()) return null;
     WindowsUpdateOutcome? outcome;
     if (await resultFile.exists()) {
       try {
         final json = jsonDecode(await resultFile.readAsString()) as Map;
-        outcome = WindowsUpdateOutcome(
-          ok: json['status'] == 'ok',
-          version: '${json['version'] ?? ''}',
-          detail: '${json['detail'] ?? ''}',
-        );
+        final owner = json['installDir'];
+        if (owner is String &&
+            owner.isNotEmpty &&
+            !_sameDirectory(owner, installDir.path)) {
+          return null;
+        }
+        final ok = json['status'] == 'ok';
+        final version = '${json['version'] ?? ''}';
+        final stale = ok && currentVersion != null && version != currentVersion;
+        if (!stale) {
+          outcome = WindowsUpdateOutcome(
+            ok: ok,
+            version: version,
+            detail: '${json['detail'] ?? ''}',
+          );
+        }
       } catch (e) {
         outcome = WindowsUpdateOutcome(ok: false, version: '', detail: '$e');
       }
@@ -277,6 +291,15 @@ class WindowsSelfUpdate {
       } catch (_) {}
     }
     return outcome;
+  }
+
+  /// Windows 路径不分大小写，结尾的分隔符号也不影响
+  static bool _sameDirectory(String a, String b) {
+    String normalize(String path) => p
+        .normalize(p.absolute(path))
+        .replaceAll(RegExp(r'[\\/]+$'), '')
+        .toLowerCase();
+    return normalize(a) == normalize(b);
   }
 }
 
@@ -380,7 +403,7 @@ try {
     try { [System.IO.Directory]::Delete($backupDir, $true) } catch { Write-Log 'backup cleanup failed' }
   }
 }
-$result = ConvertTo-Json -Compress -InputObject @{ status = $status; version = $Version; detail = $detail }
+$result = ConvertTo-Json -Compress -InputObject @{ status = $status; version = $Version; detail = $detail; installDir = $InstallDir }
 [System.IO.File]::WriteAllText($ResultPath, $result, $utf8)
 if ($status -eq 'ok') {
   foreach ($dir in @($backupDir, $StagingDir)) {

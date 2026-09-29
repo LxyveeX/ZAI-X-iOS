@@ -172,19 +172,61 @@ void main() {
     });
 
     test('the result is shown once and temporary files are removed', () async {
-      updater.resultFile
-          .writeAsStringSync('{"status":"ok","version":"2.1.1","detail":""}');
+      updater.resultFile.writeAsStringSync(jsonEncode({
+        'status': 'ok',
+        'version': '2.1.1',
+        'detail': '',
+        // Same folder, written differently: case and trailing separator.
+        'installDir': '${updater.installDir.path.toUpperCase()}\\',
+      }));
       updater.zipFile.writeAsBytesSync([1]);
       updater.stagingDir.createSync();
       updater.logFile.writeAsStringSync('log');
-      final outcome = await updater.takeOutcome();
+      final outcome = await updater.takeOutcome(currentVersion: '2.1.1');
       expect(outcome!.ok, isTrue);
       expect(outcome.version, '2.1.1');
       expect(updater.resultFile.existsSync(), isFalse);
       expect(updater.zipFile.existsSync(), isFalse);
       expect(updater.stagingDir.existsSync(), isFalse);
       expect(updater.logFile.existsSync(), isTrue);
-      expect(await updater.takeOutcome(), isNull);
+      expect(await updater.takeOutcome(currentVersion: '2.1.1'), isNull);
+    });
+
+    test('a result from another installation is left for that copy', () async {
+      updater.resultFile.writeAsStringSync(jsonEncode({
+        'status': 'ok',
+        'version': '2.1.1',
+        'detail': '',
+        'installDir': p.join(root.path, 'another copy'),
+      }));
+      updater.zipFile.writeAsBytesSync([1]);
+      expect(await updater.takeOutcome(currentVersion: '2.1.1'), isNull);
+      expect(updater.resultFile.existsSync(), isTrue);
+      expect(updater.zipFile.existsSync(), isTrue);
+    });
+
+    test('a success that does not match the running version is not shown',
+        () async {
+      updater.resultFile.writeAsStringSync(jsonEncode({
+        'status': 'ok',
+        'version': '2.1.1',
+        'detail': '',
+        'installDir': updater.installDir.path,
+      }));
+      expect(await updater.takeOutcome(currentVersion: '2.0.9'), isNull);
+      expect(updater.resultFile.existsSync(), isFalse);
+    });
+
+    test('a failure is reported to the version that was kept', () async {
+      updater.resultFile.writeAsStringSync(jsonEncode({
+        'status': 'failed',
+        'version': '2.1.1',
+        'detail': 'app did not exit',
+        'installDir': updater.installDir.path,
+      }));
+      final outcome = await updater.takeOutcome(currentVersion: '2.0.9');
+      expect(outcome!.ok, isFalse);
+      expect(outcome.detail, 'app did not exit');
     });
   });
 
@@ -275,7 +317,7 @@ void main() {
       expect(Directory(p.join(install.path, '.update-backup')).existsSync(),
           isFalse);
       expect(updater.stagingDir.existsSync(), isFalse);
-      final outcome = await updater.takeOutcome();
+      final outcome = await updater.takeOutcome(currentVersion: exeVersion);
       expect(outcome!.ok, isTrue);
       expect(outcome.version, exeVersion);
     }, timeout: const Timeout(Duration(seconds: 90)));

@@ -13,6 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:zai_x/app/i18n.dart';
 import 'package:zai_x/app/log.dart';
+import 'package:zai_x/app/utils.dart';
 import 'package:zai_x/models/version_model.dart';
 import 'package:zai_x/services/resumable_download.dart';
 import 'package:zai_x/services/windows_self_update.dart';
@@ -193,7 +194,8 @@ class AppUpdateService {
       return;
     }
     try {
-      var outcome = await WindowsSelfUpdate.forCurrentApp().takeOutcome();
+      var outcome = await WindowsSelfUpdate.forCurrentApp()
+          .takeOutcome(currentVersion: Utils.packageInfo.version);
       if (outcome == null) {
         return;
       }
