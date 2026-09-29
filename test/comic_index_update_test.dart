@@ -115,13 +115,12 @@ void main() {
     expect(due(ms + 5 * hour, ms + 5 * hour), isTrue);
   });
 
-  test('GitHub 连不上时改用 gh-proxy，成功后才开始计时', () async {
+  test('默认优先使用 gh-proxy，成功后才开始计时', () async {
     final gz = _index();
     sources.files[_proxy] = _files(gz);
 
     expect(await service.refresh(), ComicIndexUpdateResult.updated);
     expect(sources.paths, [
-      '$_raw/comic_index.json',
       '$_proxy/comic_index.json',
       '$_proxy/comic_index.tsv.gz',
     ]);
@@ -141,8 +140,8 @@ void main() {
   test('所有来源都连不上：不开始计时，2 小时后再试', () async {
     expect(await service.refresh(), ComicIndexUpdateResult.failed);
     expect(sources.paths, [
-      '$_raw/comic_index.json',
       '$_proxy/comic_index.json',
+      '$_raw/comic_index.json',
       '$_jsdelivr/comic_index.json',
     ]);
 
@@ -156,26 +155,30 @@ void main() {
     sources.files[_raw] = _files(gz);
     now = now.add(const Duration(hours: 1, minutes: 1));
     expect(await service.refresh(), ComicIndexUpdateResult.updated);
-    expect(sources.paths.first, '$_raw/comic_index.json');
+    expect(sources.paths, [
+      '$_proxy/comic_index.json',
+      '$_raw/comic_index.json',
+      '$_raw/comic_index.tsv.gz',
+    ]);
   });
 
   test('来源给的档案不完整就换下一个来源', () async {
     final gz = _index();
-    sources.files[_raw] = _files(gz, data: gz.sublist(0, gz.length ~/ 2));
-    sources.files[_proxy] = _files(gz);
+    sources.files[_proxy] = _files(gz, data: gz.sublist(0, gz.length ~/ 2));
+    sources.files[_raw] = _files(gz);
 
     expect(await service.refresh(), ComicIndexUpdateResult.updated);
-    expect(sources.paths.last, '$_proxy/comic_index.tsv.gz');
+    expect(sources.paths.last, '$_raw/comic_index.tsv.gz');
   });
 
   test('已是最新也算连上；手动检查不受时间限制', () async {
     final gz = _index();
-    sources.files[_raw] = _files(gz);
+    sources.files[_proxy] = _files(gz);
     expect(await service.refresh(), ComicIndexUpdateResult.updated);
 
     sources.requests.clear();
     expect(await service.refresh(), ComicIndexUpdateResult.skipped);
     expect(await service.refresh(force: true), ComicIndexUpdateResult.upToDate);
-    expect(sources.paths, ['$_raw/comic_index.json']);
+    expect(sources.paths, ['$_proxy/comic_index.json']);
   });
 }

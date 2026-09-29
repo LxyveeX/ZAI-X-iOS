@@ -16,6 +16,7 @@ import 'package:zai_x/app/log.dart';
 import 'package:zai_x/app/single_instance.dart';
 import 'package:zai_x/app/utils.dart';
 import 'package:zai_x/models/version_model.dart';
+import 'package:zai_x/requests/common/github_proxy.dart';
 import 'package:zai_x/services/resumable_download.dart';
 import 'package:zai_x/services/windows_self_update.dart';
 
@@ -51,7 +52,7 @@ class AppUpdateService {
     }
     if (!supported) {
       await launchUrlString(
-        version.downloadUrl,
+        githubProxyUrl(version.downloadUrl),
         mode: LaunchMode.externalApplication,
       );
       return;
@@ -74,12 +75,7 @@ class AppUpdateService {
         await file.delete();
       }
       await file.parent.create(recursive: true);
-      await Dio().download(
-        version.downloadUrl,
-        file.path,
-        cancelToken: _cancelToken,
-        onReceiveProgress: _onReceiveProgress,
-      );
+      await _downloadUpdate(version, file);
       SmartDialog.dismiss();
       await _open(file);
     } on DioException catch (e) {
@@ -88,6 +84,10 @@ class AppUpdateService {
         return;
       }
       await _fallbackToBrowser(version, e);
+    } on UpdateIntegrityException catch (e) {
+      SmartDialog.dismiss();
+      Log.logPrint(e);
+      SmartDialog.showToast("更新档校验失败，请重新下载".i18n);
     } catch (e) {
       SmartDialog.dismiss();
       Log.logPrint(e);
@@ -128,16 +128,9 @@ class AppUpdateService {
     try {
       await updater.resetWorkDir();
       try {
-        // 线路不稳时从断点续传，重试用完才退回浏览器
-        await downloadWithResume(
-          Dio(BaseOptions(connectTimeout: const Duration(seconds: 20))),
-          version.downloadUrl,
-          updater.zipFile,
-          cancelToken: _cancelToken,
-          expectedSize: version.size,
-          onProgress: _onReceiveProgress,
-          onRetry: (_) => stage.value = "网络不稳，正在重新连接",
-        );
+        await _downloadUpdate(version, updater.zipFile);
+      } on UpdateIntegrityException {
+        rethrow;
       } on DioException catch (e) {
         if (CancelToken.isCancel(e)) {
           SmartDialog.dismiss();
@@ -149,12 +142,6 @@ class AppUpdateService {
       }
       cancellable.value = false;
       progress.value = -1;
-      stage.value = "正在校验更新档";
-      await WindowsSelfUpdate.verifyDownload(
-        updater.zipFile,
-        sha256Hex: version.sha256,
-        size: version.size,
-      );
       stage.value = "正在解压更新档";
       await updater.extract();
       stage.value = "即将重新启动以完成更新";
@@ -239,12 +226,60 @@ class AppUpdateService {
     progress.value = total > 0 ? received / total : -1;
   }
 
+  static Future<void> _downloadUpdate(VersionModel version, File file) async {
+    final sources = githubSources(version.downloadUrl);
+    final dio = Dio(BaseOptions(connectTimeout: const Duration(seconds: 20)));
+    try {
+      for (var i = 0; i < sources.length; i++) {
+        cancellable.value = true;
+        stage.value = "正在下载新版本";
+        try {
+          await downloadWithResume(
+            dio,
+            sources[i],
+            file,
+            cancelToken: _cancelToken,
+            expectedSize: version.size,
+            // 代理连续失败两次就接回原站；已收到的部分仍可续传。
+            maxAttempts: i == 0 && sources.length > 1 ? 2 : 6,
+            onProgress: _onReceiveProgress,
+            onRetry: (_) => stage.value = "网络不稳，正在重新连接",
+          );
+          if (version.sha256.isNotEmpty) {
+            cancellable.value = false;
+            progress.value = -1;
+            stage.value = "正在校验更新档";
+            await WindowsSelfUpdate.verifyDownload(
+              file,
+              sha256Hex: version.sha256,
+              size: version.size,
+            );
+          }
+          return;
+        } catch (e) {
+          if (_cancelToken?.isCancelled == true ||
+              e is DioException && CancelToken.isCancel(e)) {
+            rethrow;
+          }
+          if (e is UpdateIntegrityException && await file.exists()) {
+            // 校验失败的档案不能接着用，从下一个来源重新下载。
+            await file.delete();
+          }
+          if (i == sources.length - 1) rethrow;
+          Log.logPrint(e);
+        }
+      }
+    } finally {
+      dio.close();
+    }
+  }
+
   static Future<void> _fallbackToBrowser(
       VersionModel version, Object error) async {
     Log.logPrint(error);
     SmartDialog.showToast("下载失败，改用浏览器下载".i18n);
     await launchUrlString(
-      version.downloadUrl,
+      githubProxyUrl(version.downloadUrl),
       mode: LaunchMode.externalApplication,
     );
   }

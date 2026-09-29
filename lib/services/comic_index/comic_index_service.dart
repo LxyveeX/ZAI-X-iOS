@@ -12,6 +12,7 @@ import 'package:get/get.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:zai_x/app/log.dart';
+import 'package:zai_x/requests/common/github_proxy.dart';
 import 'package:zai_x/services/comic_index/comic_index.dart';
 import 'package:zai_x/services/local_storage_service.dart';
 
@@ -132,14 +133,11 @@ class ComicIndexService {
   static const String _githubRaw =
       'https://raw.githubusercontent.com/funkeyyou/zaimanhua/comic-index';
 
-  /// GitHub 加速代理（第三方公益服务 gh-proxy.com）：在原网址前加上前缀即可
-  static const String _proxyPrefix = 'https://gh-proxy.com/';
-
   /// 下载来源，依序尝试，前一个连不上或内容不对就换下一个：
-  /// GitHub 原站 → gh-proxy 加速（给连不上 GitHub 的网络用）→ jsDelivr
+  /// gh-proxy 加速 → GitHub 原站 → jsDelivr
   static const List<String> remoteBases = [
+    '$githubProxyPrefix$_githubRaw',
     _githubRaw,
-    '$_proxyPrefix$_githubRaw',
     'https://cdn.jsdelivr.net/gh/funkeyyou/zaimanhua@comic-index',
   ];
 

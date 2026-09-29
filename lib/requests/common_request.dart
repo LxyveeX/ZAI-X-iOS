@@ -2,9 +2,19 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:zai_x/models/version_model.dart';
+import 'package:zai_x/requests/common/github_proxy.dart';
 
 /// 通用的请求
 class CommonRequest {
+  CommonRequest({Dio? dio})
+      : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: const Duration(seconds: 8),
+              receiveTimeout: const Duration(seconds: 15),
+            ));
+
+  final Dio _dio;
+
   /// 版本信息来源：本仓库的 GitHub Release
   static const String kRepo = "funkeyyou/zaimanhua";
 
@@ -14,23 +24,38 @@ class CommonRequest {
 
   /// 检查更新：读取仓库最新的 Release
   Future<VersionModel> checkUpdateGithubRelease() async {
-    var result = await Dio().get(
-      "https://api.github.com/repos/$kRepo/releases/latest",
-      queryParameters: {
-        "ts": DateTime.now().millisecondsSinceEpoch,
-      },
-      options: Options(
-        responseType: ResponseType.json,
-        headers: const {
-          "Accept": "application/vnd.github+json",
-        },
-      ),
-    );
-    return parseRelease(
-      result.data as Map,
-      android: Platform.isAndroid,
-      windows: Platform.isWindows,
-    );
+    final sources =
+        githubSources("https://api.github.com/repos/$kRepo/releases/latest");
+    for (var i = 0; i < sources.length; i++) {
+      try {
+        final result = await _dio.get(
+          sources[i],
+          queryParameters: {
+            "ts": DateTime.now().millisecondsSinceEpoch,
+          },
+          options: Options(
+            responseType: ResponseType.json,
+            headers: const {
+              "Accept": "application/vnd.github+json",
+            },
+          ),
+        );
+        final data = result.data;
+        if (data is! Map ||
+            !RegExp(r'^v?\d+\.\d+\.\d+$')
+                .hasMatch(data["tag_name"]?.toString() ?? "")) {
+          throw const FormatException('版本信息不完整');
+        }
+        return parseRelease(
+          data,
+          android: Platform.isAndroid,
+          windows: Platform.isWindows,
+        );
+      } catch (_) {
+        if (i == sources.length - 1) rethrow;
+      }
+    }
+    throw StateError('没有可用的更新来源');
   }
 
   /// 把 Release 转换成版本信息
