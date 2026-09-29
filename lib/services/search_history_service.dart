@@ -21,17 +21,25 @@ class LocalSearchSuggestion {
 ///
 /// 官方的热门搜索接口早就 404 了，所以建议改用本机资料：
 /// 搜过的关键词、看过的作品、收藏的作品。
+/// AI 搜索的描述另外存一份（[ai] 为 true），不和关键词混在一起。
 class SearchHistoryService {
   static const int kMaxItems = 20;
 
-  static String _key(int type) => type == AppConstant.kTypeNovel
-      ? LocalStorageService.kNovelSearchHistory
-      : LocalStorageService.kComicSearchHistory;
+  static String _key(int type, bool ai) {
+    if (type == AppConstant.kTypeNovel) {
+      return ai
+          ? LocalStorageService.kNovelAiSearchHistory
+          : LocalStorageService.kNovelSearchHistory;
+    }
+    return ai
+        ? LocalStorageService.kComicAiSearchHistory
+        : LocalStorageService.kComicSearchHistory;
+  }
 
-  static List<String> get(int type) {
+  static List<String> get(int type, {bool ai = false}) {
     try {
       var value = LocalStorageService.instance
-          .getValue<List<dynamic>>(_key(type), const <dynamic>[]);
+          .getValue<List<dynamic>>(_key(type, ai), const <dynamic>[]);
       return value.map((e) => e.toString()).where((e) => e.isNotEmpty).toList();
     } catch (e) {
       // 旧资料型别不对就当作没有历史
@@ -39,26 +47,26 @@ class SearchHistoryService {
     }
   }
 
-  static Future<void> add(int type, String keyword) async {
+  static Future<void> add(int type, String keyword, {bool ai = false}) async {
     var text = keyword.trim();
     if (text.isEmpty) {
       return;
     }
-    var list = get(type)..removeWhere((e) => e == text);
+    var list = get(type, ai: ai)..removeWhere((e) => e == text);
     list.insert(0, text);
     if (list.length > kMaxItems) {
       list = list.sublist(0, kMaxItems);
     }
-    await LocalStorageService.instance.setValue(_key(type), list);
+    await LocalStorageService.instance.setValue(_key(type, ai), list);
   }
 
-  static Future<void> remove(int type, String keyword) async {
-    var list = get(type)..removeWhere((e) => e == keyword);
-    await LocalStorageService.instance.setValue(_key(type), list);
+  static Future<void> remove(int type, String keyword, {bool ai = false}) async {
+    var list = get(type, ai: ai)..removeWhere((e) => e == keyword);
+    await LocalStorageService.instance.setValue(_key(type, ai), list);
   }
 
-  static Future<void> clear(int type) async {
-    await LocalStorageService.instance.removeValue(_key(type));
+  static Future<void> clear(int type, {bool ai = false}) async {
+    await LocalStorageService.instance.removeValue(_key(type, ai));
   }
 
   /// 依输入的关键词，从阅读记录与本地收藏里挑出可能想找的作品

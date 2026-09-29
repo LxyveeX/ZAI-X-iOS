@@ -10,6 +10,8 @@ import 'package:zai_x/models/comic/comic_brief.dart';
 import 'package:zai_x/models/comic/search_item.dart';
 import 'package:zai_x/requests/comic_request.dart';
 import 'package:zai_x/routes/app_navigator.dart';
+import 'package:zai_x/services/ai/ai_search_models.dart';
+import 'package:zai_x/services/ai/ai_search_session.dart';
 import 'package:zai_x/services/comic_index/comic_index.dart';
 import 'package:zai_x/services/comic_index/comic_index_service.dart';
 import 'package:zai_x/services/search_history_service.dart';
@@ -36,6 +38,11 @@ class ComicSearchController extends BasePageController<SearchComicItem> {
 
   /// 依输入内容从本机资料给的建议
   final suggestions = <LocalSearchSuggestion>[].obs;
+
+  /// AI 搜索（没有内建 AI 服务的建置不显示开关）
+  final ai = AiSearchSession(AiSearchKind.comic);
+
+  bool get _aiMode => ai.enabled.value;
 
   /// 官方搜索每页固定 20 笔（见 [ComicRequest.search]）
   static const int kRemotePageSize = 20;
@@ -68,18 +75,27 @@ class ComicSearchController extends BasePageController<SearchComicItem> {
 
   void loadHistory() {
     searchHistory.assignAll(
-      SearchHistoryService.get(AppConstant.kTypeComic),
+      SearchHistoryService.get(AppConstant.kTypeComic, ai: _aiMode),
     );
   }
 
   /// 输入变化时更新建议；清空输入就回到历史列表
   void onKeywordChanged(String text) {
-    suggestions.assignAll(
-      SearchHistoryService.suggest(AppConstant.kTypeComic, text),
-    );
+    // AI 模式输入的是描述，不比对书名
+    suggestions.assignAll(_aiMode
+        ? const <LocalSearchSuggestion>[]
+        : SearchHistoryService.suggest(AppConstant.kTypeComic, text));
     if (text.isEmpty) {
       showHotWord.value = true;
     }
+  }
+
+  /// 切换 AI 模式：回到历史列表，按搜索才会开始
+  Future<void> setAiMode(bool value) async {
+    await ai.setEnabled(value);
+    suggestions.clear();
+    loadHistory();
+    showHotWord.value = true;
   }
 
   void searchKeyword(String text) {
@@ -88,12 +104,12 @@ class ComicSearchController extends BasePageController<SearchComicItem> {
   }
 
   Future<void> removeHistory(String text) async {
-    await SearchHistoryService.remove(AppConstant.kTypeComic, text);
+    await SearchHistoryService.remove(AppConstant.kTypeComic, text, ai: _aiMode);
     loadHistory();
   }
 
   Future<void> clearHistory() async {
-    await SearchHistoryService.clear(AppConstant.kTypeComic);
+    await SearchHistoryService.clear(AppConstant.kTypeComic, ai: _aiMode);
     loadHistory();
   }
 
@@ -101,7 +117,13 @@ class ComicSearchController extends BasePageController<SearchComicItem> {
     if (searchController.text.isEmpty) {
       list.clear();
       hiddenResults.clear();
+      ai.hide();
       showHotWord.value = true;
+      return;
+    }
+
+    if (_aiMode) {
+      unawaited(_submitAi());
       return;
     }
 
@@ -121,6 +143,22 @@ class ComicSearchController extends BasePageController<SearchComicItem> {
     loadHistory();
     _startLocalSearch();
     refreshData();
+  }
+
+  Future<void> _submitAi() async {
+    final text = searchController.text.trim();
+    if (text.isEmpty) return;
+    showHotWord.value = false;
+    suggestions.clear();
+    await SearchHistoryService.add(AppConstant.kTypeComic, text, ai: true);
+    loadHistory();
+    await ai.search(text);
+  }
+
+  @override
+  void onClose() {
+    ai.dispose();
+    super.onClose();
   }
 
   /// 同时开始搜本地漫画索引；结果等官方第一页回来后再决定要显示哪些

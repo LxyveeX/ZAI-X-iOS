@@ -79,8 +79,14 @@ jobs:
           else
             echo "没有 comic-index 分支，沿用仓库内的快照"
           fi
+      # AI 搜索的服务设定存在 secrets（仓库里没有明文），混淆后以 dart-define 注入；没设定时 App 隐藏 AI 功能
+      - name: Prepare AI defines
+        shell: bash
+        env:
+          ZAI_AI_CONFIG: ${{ secrets.ZAI_AI_CONFIG }}
+        run: dart run tools/ai/make_ai_defines.dart --env ZAI_AI_CONFIG --out "$RUNNER_TEMP/ai_defines.json"
       - name: Build APK
-        run: flutter build apk --release
+        run: flutter build apk --release --dart-define-from-file="${{ runner.temp }}/ai_defines.json"
       - name: Rename APK
         run: cp build/app/outputs/flutter-apk/app-release.apk ZAI-X-android.apk
       - name: Upload artifact
@@ -135,8 +141,14 @@ jobs:
           else
             echo "没有 comic-index 分支，沿用仓库内的快照"
           fi
+      # AI 搜索的服务设定存在 secrets（仓库里没有明文），混淆后以 dart-define 注入；没设定时 App 隐藏 AI 功能
+      - name: Prepare AI defines
+        shell: bash
+        env:
+          ZAI_AI_CONFIG: ${{ secrets.ZAI_AI_CONFIG }}
+        run: dart run tools/ai/make_ai_defines.dart --env ZAI_AI_CONFIG --out "$RUNNER_TEMP/ai_defines.json"
       - name: Build Windows
-        run: flutter build windows --release
+        run: flutter build windows --release --dart-define-from-file="${{ runner.temp }}/ai_defines.json"
       - name: Zip
         run: Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath "ZAI-X-windows-x64.zip"
       - name: Upload artifact

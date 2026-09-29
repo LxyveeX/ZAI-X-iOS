@@ -4,6 +4,7 @@ import 'package:zai_x/models/comic/search_item.dart';
 import 'package:zai_x/modules/comic/search/comic_search_controller.dart';
 import 'package:zai_x/routes/app_navigator.dart';
 import 'package:zai_x/services/comic_index/comic_index.dart';
+import 'package:zai_x/widgets/ai_search_view.dart';
 import 'package:zai_x/widgets/net_image.dart';
 import 'package:zai_x/widgets/page_list_view.dart';
 import 'package:zai_x/widgets/search_suggestion_view.dart';
@@ -30,36 +31,57 @@ class ComicSearchPage extends StatelessWidget {
         titleSpacing: 8,
         title: SizedBox(
           height: 40,
-          child: TextField(
-            controller: controller.searchController,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: "搜索漫画".i18n,
-              contentPadding: AppStyle.edgeInsetsH12,
-              border: const OutlineInputBorder(),
-              prefixIcon: SizedBox(
-                width: 48,
-                child: IconButton(
-                  onPressed: () {
-                    AppNavigator.closePage();
-                  },
-                  icon: const Icon(Icons.arrow_back),
+          child: Obx(
+            () => TextField(
+              controller: controller.searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: controller.ai.enabled.value
+                    ? "用一句话描述想看的漫画".i18n
+                    : "搜索漫画".i18n,
+                contentPadding: AppStyle.edgeInsetsH12,
+                border: const OutlineInputBorder(),
+                prefixIcon: SizedBox(
+                  width: 48,
+                  child: IconButton(
+                    onPressed: () {
+                      AppNavigator.closePage();
+                    },
+                    icon: const Icon(Icons.arrow_back),
+                  ),
+                ),
+                suffixIcon: SizedBox(
+                  width: 48,
+                  child: IconButton(
+                    onPressed: controller.submit,
+                    icon: const Icon(Icons.search),
+                  ),
                 ),
               ),
-              suffixIcon: SizedBox(
-                width: 48,
-                child: IconButton(
-                  onPressed: controller.submit,
-                  icon: const Icon(Icons.search),
-                ),
-              ),
+              onSubmitted: (e) {
+                controller.submit();
+              },
+              onChanged: controller.onKeywordChanged,
             ),
-            onSubmitted: (e) {
-              controller.submit();
-            },
-            onChanged: controller.onKeywordChanged,
           ),
         ),
+        bottom: controller.ai.available
+            ? PreferredSize(
+                preferredSize: const Size.fromHeight(42),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Obx(
+                      () => AiSearchToggle(
+                        value: controller.ai.enabled.value,
+                        onChanged: controller.setAiMode,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : null,
       ),
       body: Stack(
         children: [
@@ -79,6 +101,21 @@ class ComicSearchPage extends StatelessWidget {
               return buildItem(item);
             },
           ),
+          if (controller.ai.available)
+            Positioned.fill(
+              child: Obx(
+                () => Offstage(
+                  offstage: !controller.ai.visible.value,
+                  child: Container(
+                    color: Get.theme.scaffoldBackgroundColor,
+                    child: AiSearchResultView(
+                      session: controller.ai,
+                      onOpen: AppNavigator.toComicDetail,
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Positioned.fill(
             child: Obx(
               () => Offstage(
@@ -93,6 +130,8 @@ class ComicSearchPage extends StatelessWidget {
                     onRemoveHistory: controller.removeHistory,
                     onClearHistory: controller.clearHistory,
                     onOpen: AppNavigator.toComicDetail,
+                    aiMode: controller.ai.enabled.value,
+                    examples: AiSearchExamples.comic,
                   ),
                 ),
               ),

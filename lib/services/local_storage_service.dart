@@ -153,6 +153,18 @@ class LocalStorageService extends GetxService {
   /// 任务达成后自动领取奖励
   static const String kAutoClaimTask = "AutoClaimTask";
 
+  /// 搜索页的 AI 模式开关（漫画、小说共用）
+  static const String kAiSearchEnabled = "AiSearchEnabled";
+
+  /// AI 搜索今天已用次数，格式「yyyy-MM-dd|次数」
+  static const String kAiSearchQuota = "AiSearchQuota";
+
+  /// 漫画 AI 搜索历史
+  static const String kComicAiSearchHistory = "ComicAiSearchHistory";
+
+  /// 轻小说 AI 搜索历史
+  static const String kNovelAiSearchHistory = "NovelAiSearchHistory";
+
   late Box settingsBox;
   Future init() async {
     var dir = await getApplicationSupportDirectory();

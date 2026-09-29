@@ -107,6 +107,19 @@ abstract final class ComicIndexText {
   static List<String> tokens(String query) =>
       query.split(_space).map(normalize).where((t) => t.isNotEmpty).toList();
 
+  /// 只做繁转简，保留大小写、空白与标点（给送往官方搜索的关键词用）
+  static String toSimplified(String input) {
+    if (input.isEmpty) return input;
+    final table = _t2s;
+    final codes = Uint16List(input.length);
+    for (var i = 0; i < input.length; i++) {
+      final c = input.codeUnitAt(i);
+      final simplified = table[c];
+      codes[i] = simplified != 0 ? simplified : c;
+    }
+    return String.fromCharCodes(codes);
+  }
+
   static bool _isSeparator(int c) =>
       (c >= 0x80 && c <= 0xBF) ||
       c == 0xD7 ||

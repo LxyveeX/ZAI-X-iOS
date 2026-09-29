@@ -113,4 +113,22 @@ void main() {
       isEmpty,
     );
   });
+
+  test('AI descriptions are kept apart from keywords', () async {
+    await SearchHistoryService.add(AppConstant.kTypeComic, '海賊');
+    await SearchHistoryService.add(
+      AppConstant.kTypeComic,
+      '校园恋爱，已完结',
+      ai: true,
+    );
+    expect(SearchHistoryService.get(AppConstant.kTypeComic), ['海賊']);
+    expect(
+      SearchHistoryService.get(AppConstant.kTypeComic, ai: true),
+      ['校园恋爱，已完结'],
+    );
+
+    await SearchHistoryService.clear(AppConstant.kTypeComic, ai: true);
+    expect(SearchHistoryService.get(AppConstant.kTypeComic, ai: true), isEmpty);
+    expect(SearchHistoryService.get(AppConstant.kTypeComic), ['海賊']);
+  });
 }

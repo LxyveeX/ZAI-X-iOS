@@ -331,15 +331,19 @@ class ComicRequest {
     return ComicDetailModel.fromJson(result);
   }
 
-  /// 漫画简要资料（封面、题材、最新章节），给本地索引的搜索结果补上封面
-  Future<ComicBrief> comicBrief({required int comicId}) async {
-    var result = await HttpClient.instance.getJson(
+  /// 漫画详情接口的原始资料：{data: {...}, readingRecord: {...}}
+  Future<dynamic> comicDetailData({required int comicId}) {
+    return HttpClient.instance.getJson(
       '/comic/detail/$comicId',
       queryParameters: {"_v": Api.APP_VERSION},
       needLogin: true,
       checkCode: true,
     );
-    return ComicBrief.fromDetailJson(result);
+  }
+
+  /// 漫画简要资料（封面、题材、最新章节），给本地索引的搜索结果补上封面
+  Future<ComicBrief> comicBrief({required int comicId}) async {
+    return ComicBrief.fromDetailJson(await comicDetailData(comicId: comicId));
   }
 
   /// 漫画详情

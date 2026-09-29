@@ -55,3 +55,7 @@ android/.kotlin/
 
 # Codex 附件（使用者傳入的截圖等）
 .codex-remote-attachments/
+
+# AI 服務設定（明文或混淆後的 dart-define 檔）只放在倉庫外，這裡再擋一次
+ai_defines*.json
+zaimanhua-ai*.json
