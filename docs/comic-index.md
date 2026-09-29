@@ -65,4 +65,7 @@ python tools/i18n/gen_t2s.py
 - 全量爬取 ID 1–89,500：有效 82,950 部（神隱 10,416、copyright=1 22,229），0 失敗；gzip 2.59 MB。增量（只抓新 ID）與輪替合併皆在套件外直接執行成功。
 - 本機 analyze 0 error／0 warning（13 條既有 info），124 項測試通過（新增索引與神隱詳情共 20 項，含以內建索引實搜 48894、海賊王）。
 - 本機 release APK 建置成功，MuMu 覆蓋安裝：搜尋「Naruto」頂端補上火影忍者等 3 部神隱作品；「OP」以別名把海賊王排第一，收合／展開與 50 部上限提示正常；火影忍者（570 話）詳情、評論正常，閱讀顯示等級不足說明；48894 在 Lv.4 帳號下可閱讀（第 01 話 38 頁）；設定頁顯示索引筆數與資料時間。日誌無 FATAL EXCEPTION、Unhandled Exception、RenderFlex 或 E/flutter。
-- 尚未驗證：模擬器無法用 adb 輸入中文，中文書名搜尋只由單元測試覆蓋；Windows 版未實機測試；GitHub Actions 能否連上 v4api 待 workflow 首次執行確認。
+- MuMu 線上更新：「檢查更新」在版本相同時顯示已是最新；資料分支換新版後可下載、驗證並替換，重開 App 後仍優先使用下載的版本。
+- [CI 36545939679](https://github.com/funkeyyou/zaimanhua/actions/runs/36545939679)（功能分支手動觸發）：analyze、測試、Android／Windows 建置全部成功，兩個建置 job 都換上 comic-index 分支的清單。
+- [comic-index 36547238935](https://github.com/funkeyyou/zaimanhua/actions/runs/36547238935)：GitHub runner 可連上 v4api，增量（rotate=7）掃 13,064 個 ID、0 失敗、約 22 分鐘，新增 1 部後發佈 82,951 部。
+- 尚未驗證：模擬器無法用 adb 輸入中文，中文書名搜尋只由單元測試覆蓋；Windows 版未實機測試。
