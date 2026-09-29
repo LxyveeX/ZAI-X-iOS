@@ -72,6 +72,13 @@ Future<void> main(List<String> argv) async {
     final crawler = _Crawler(args, cache, floor: floor, previous: previous);
     await crawler.run();
     await cache.flush();
+    if (crawler.aborted) {
+      stderr.writeln(
+          '前 ${crawler.attempted} 个请求有 ${crawler.errorIds.length} 个失败，'
+          '看起来连不上接口，提前中止且不输出。失败 ID 例：${crawler.errorIds.take(10).join(",")}');
+      exitCode = 2;
+      return;
+    }
     crawled.addAll(crawler.crawledIds);
     final attempted =
         crawler.okCount + crawler.emptyCount + crawler.errorIds.length;
@@ -286,6 +293,10 @@ class _Crawler {
   final Stopwatch _clock = Stopwatch();
   int _done = 0;
 
+  /// 一开始就大量失败（例如连不上接口）时提前中止，避免重试到逾时
+  bool aborted = false;
+  int get attempted => _done;
+
   Future<void> run() async {
     _next = args.start;
     _lastFoundId = cache.records.values
@@ -304,6 +315,7 @@ class _Crawler {
   int? _take() {
     final prev = previous;
     while (true) {
+      if (aborted) return null;
       final id = _next;
       if (args.end > 0) {
         if (id > args.end) return null;
@@ -344,6 +356,10 @@ class _Crawler {
         }
       }
       _done++;
+      if ((_done >= 12 && errorIds.length == _done) ||
+          (_done >= 200 && errorIds.length * 2 > _done)) {
+        aborted = true;
+      }
       if (_done % 500 == 0) {
         await cache.flush();
         final rate = _done / (_clock.elapsedMilliseconds / 1000);
