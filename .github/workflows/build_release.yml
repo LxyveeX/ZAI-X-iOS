@@ -59,6 +59,26 @@ jobs:
             echo "keyPassword=${{ secrets.ZAI_KEY_PASSWORD }}" | tr -d '\r'
             echo "keyAlias=${{ secrets.ZAI_KEY_ALIAS }}" | tr -d '\r'
           } > android/zai_key.properties
+      # 打包前换成 comic-index 分支上每天更新的本地漫画索引；取不到或不完整就沿用仓库内的快照
+      - name: Refresh bundled comic index
+        shell: bash
+        run: |
+          if git fetch --depth=1 origin comic-index 2>/dev/null; then
+            tmp="$RUNNER_TEMP/comic-index"
+            mkdir -p "$tmp"
+            git show FETCH_HEAD:comic_index.tsv.gz > "$tmp/comic_index.tsv.gz"
+            git show FETCH_HEAD:comic_index.json > "$tmp/comic_index.json"
+            lines=$(gzip -dc "$tmp/comic_index.tsv.gz" | tail -n +2 | grep -c . || true)
+            count=$(sed -n 's/.*"count": *\([0-9]*\).*/\1/p' "$tmp/comic_index.json")
+            if [ -n "$count" ] && [ "$lines" = "$count" ]; then
+              cp "$tmp/comic_index.tsv.gz" "$tmp/comic_index.json" assets/comic_index/
+              echo "已换成 comic-index 分支的索引（$count 部）"
+            else
+              echo "comic-index 分支的索引不完整，沿用仓库内的快照"
+            fi
+          else
+            echo "没有 comic-index 分支，沿用仓库内的快照"
+          fi
       - name: Build APK
         run: flutter build apk --release
       - name: Rename APK
@@ -95,6 +115,26 @@ jobs:
           cache: true
       - name: Restore packages
         run: flutter pub get
+      # 打包前换成 comic-index 分支上每天更新的本地漫画索引；取不到或不完整就沿用仓库内的快照
+      - name: Refresh bundled comic index
+        shell: bash
+        run: |
+          if git fetch --depth=1 origin comic-index 2>/dev/null; then
+            tmp="$RUNNER_TEMP/comic-index"
+            mkdir -p "$tmp"
+            git show FETCH_HEAD:comic_index.tsv.gz > "$tmp/comic_index.tsv.gz"
+            git show FETCH_HEAD:comic_index.json > "$tmp/comic_index.json"
+            lines=$(gzip -dc "$tmp/comic_index.tsv.gz" | tail -n +2 | grep -c . || true)
+            count=$(sed -n 's/.*"count": *\([0-9]*\).*/\1/p' "$tmp/comic_index.json")
+            if [ -n "$count" ] && [ "$lines" = "$count" ]; then
+              cp "$tmp/comic_index.tsv.gz" "$tmp/comic_index.json" assets/comic_index/
+              echo "已换成 comic-index 分支的索引（$count 部）"
+            else
+              echo "comic-index 分支的索引不完整，沿用仓库内的快照"
+            fi
+          else
+            echo "没有 comic-index 分支，沿用仓库内的快照"
+          fi
       - name: Build Windows
         run: flutter build windows --release
       - name: Zip

@@ -84,6 +84,7 @@ flutter:
     - assets/lotties/
     - assets/images/
     - assets/category/
+    - assets/comic_index/
     - assets/statement.txt
   fonts:
     - family: SourceHanSansSC

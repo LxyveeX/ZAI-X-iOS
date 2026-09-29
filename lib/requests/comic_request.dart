@@ -10,6 +10,7 @@ import 'package:zai_x/models/comic/chapter_detail_model.dart';
 import 'package:zai_x/models/comic/comic_tag_table.g.dart';
 import 'package:zai_x/models/comic/chapter_detail_web_model.dart';
 import 'package:zai_x/models/comic/chapter_info.dart';
+import 'package:zai_x/models/comic/comic_brief.dart';
 import 'package:zai_x/models/comic/comic_related_model.dart';
 import 'package:zai_x/models/comic/detail_info.dart';
 import 'package:zai_x/models/comic/detail_model.dart';
@@ -23,6 +24,7 @@ import 'package:zai_x/models/comic/update_item_model.dart';
 import 'package:zai_x/models/comic/view_point_model.dart';
 import 'package:zai_x/models/comic/web_search_model.dart';
 import 'package:zai_x/models/db/download_status.dart';
+import 'package:zai_x/requests/common/api.dart';
 import 'package:zai_x/requests/common/http_client.dart';
 import 'package:zai_x/services/comic_download_service.dart';
 import 'package:zai_x/services/user_service.dart';
@@ -199,9 +201,7 @@ class ComicRequest {
       query["firstLetter"] = firstLetter;
     }
     var result = await HttpClient.instance.getJson('/comic/filter/list',
-        queryParameters: query,
-        checkCode: true,
-        needLogin: true // 登录可以更多内容
+        queryParameters: query, checkCode: true, needLogin: true // 登录可以更多内容
         );
     for (var item in result["comicList"]) {
       list.add(ComicCategoryComicModel.fromJson(item));
@@ -270,10 +270,7 @@ class ComicRequest {
   Future<ComicAuthorModel> authorDetail({required int id}) async {
     var result = await HttpClient.instance.getJson(
       '/comic/list_by_author',
-      queryParameters: {
-        'tag_id': id,
-        'page': 1
-      },
+      queryParameters: {'tag_id': id, 'page': 1},
       needLogin: true,
     );
 
@@ -311,23 +308,38 @@ class ComicRequest {
         }
       } catch (e) {
         errorMsg += "\n${priorityV1 ? "V4" : "V1"}：$e";
-        throw AppError("ComicID:$comicId\n无法读取漫画信息，可能需要登录或有等级限制\n$errorMsg".i18n);
+        throw AppError(
+            "ComicID:$comicId\n无法读取漫画信息，可能需要登录或有等级限制\n$errorMsg".i18n);
       }
     }
     return info;
   }
 
   /// 漫画详情
+  ///
+  /// 带上官方 App 版本 [Api.APP_VERSION]，神隐作品才会返回详情与完整章节列表。
   Future<ComicDetailModel> comicDetailV4({
     required int comicId,
   }) async {
     var result = await HttpClient.instance.getJson(
       '/comic/detail/$comicId',
+      queryParameters: {"_v": Api.APP_VERSION},
       needLogin: true,
       checkCode: true,
     );
 
     return ComicDetailModel.fromJson(result);
+  }
+
+  /// 漫画简要资料（封面、题材、最新章节），给本地索引的搜索结果补上封面
+  Future<ComicBrief> comicBrief({required int comicId}) async {
+    var result = await HttpClient.instance.getJson(
+      '/comic/detail/$comicId',
+      queryParameters: {"_v": Api.APP_VERSION},
+      needLogin: true,
+      checkCode: true,
+    );
+    return ComicBrief.fromDetailJson(result);
   }
 
   /// 漫画详情
@@ -389,8 +401,6 @@ class ComicRequest {
       {required int comicId,
       required int chapterId,
       required bool useHD}) async {
-    ComicChapterDetail info;
-
     try {
       //查询本地是否存在
       var localInfo =
@@ -398,28 +408,46 @@ class ComicRequest {
       if (localInfo != null && localInfo.status == DownloadStatus.complete) {
         return ComicChapterDetail.fromDownload(localInfo);
       }
-
-      var v4 = await chapterDetailV4(comicId: comicId, chapterId: chapterId);
-      info = ComicChapterDetail.fromV4(v4, useHD);
     } catch (e) {
       Log.logPrint(e);
-      try {
-        var v1 = await chapterDetailWeb(comicId: comicId, chapterId: chapterId);
-        info = ComicChapterDetail.fromWebApi(v1);
-      } catch (e) {
-        Log.logPrint(e);
-
-        throw AppError("ComicID:$comicId ChapterID:$chapterId\n无法读取章节信息".i18n);
-      }
     }
-    return info;
+
+    ComicChapterDetailModel? v4;
+    try {
+      v4 = await chapterDetailV4(comicId: comicId, chapterId: chapterId);
+    } catch (e) {
+      Log.logPrint(e);
+    }
+    if (v4 != null) {
+      if (!v4.isLocked) {
+        return ComicChapterDetail.fromV4(v4, useHD);
+      }
+      // 接口正常回应、只是没有给图片：这是账号权限问题，旧网页接口也拿不到，
+      // 直接说明原因，不必再等一个注定失败的请求
+      throw AppError(chapterLockedMessage(UserService.instance.logined.value));
+    }
+    try {
+      var v1 = await chapterDetailWeb(comicId: comicId, chapterId: chapterId);
+      return ComicChapterDetail.fromWebApi(v1);
+    } catch (e) {
+      Log.logPrint(e);
+      throw AppError("ComicID:$comicId ChapterID:$chapterId\n无法读取章节信息".i18n);
+    }
   }
 
+  /// 章节没有阅读权限时的说明
+  static String chapterLockedMessage(bool logined) => logined
+      ? "目前的账号还不能阅读这一话，可能是等级不足或作品暂未开放阅读".i18n
+      : "这一话需要登录后才能阅读；登录后仍无法阅读，可能是等级不足或作品暂未开放".i18n;
+
   /// 章节详情-V4
+  ///
+  /// 同样要带 [Api.APP_VERSION]，否则神隐作品的章节会回「漫画不存在」。
   Future<ComicChapterDetailModel> chapterDetailV4(
       {required int comicId, required int chapterId}) async {
     var result = await HttpClient.instance.getJson(
       '/comic/chapter/$comicId/$chapterId',
+      queryParameters: {"_v": Api.APP_VERSION},
       needLogin: true,
       checkCode: true,
     );

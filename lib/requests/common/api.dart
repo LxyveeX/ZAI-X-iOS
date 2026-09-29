@@ -50,6 +50,14 @@ class Api {
   }
 
   static const String VERSION = "3.8.2";
+
+  /// 官方 App 的版本号，漫画详情与章节请求以参数 _v 送出。
+  ///
+  /// v4api 依这个参数决定要不要返回「神隐」等隐藏作品：不带或低于 2.2.x 时，
+  /// 这些作品的详情与章节一律回「漫画不存在或已被删除」；带上后就能拿到
+  /// 完整章节列表（能不能看图仍由账号权限决定）。
+  static const String APP_VERSION = "2.3.8";
+
   static String get timeStamp =>
       (DateTime.now().millisecondsSinceEpoch / 1000).toStringAsFixed(0);
 

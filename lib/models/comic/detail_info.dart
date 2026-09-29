@@ -34,6 +34,7 @@ class ComicDetailInfo {
     required this.volumes,
     this.isHide = false,
     this.isVip = false,
+    this.canRead = true,
   });
 
   factory ComicDetailInfo.empty() => ComicDetailInfo(
@@ -59,6 +60,8 @@ class ComicDetailInfo {
         firstLetter: data.data.firstLetter ?? "",
         comicPy: data.data.comicPy ?? "",
         isVip: false,
+        isHide: data.data.hidden == 1,
+        canRead: data.data.canRead ?? true,
         types: (data.data.types ?? [])
             .map(
               (e) => ComicDetailTag(
@@ -215,6 +218,9 @@ class ComicDetailInfo {
 
   /// 是否神隐
   bool isHide;
+
+  /// 目前的账号（或未登录）能否阅读；false 时仍可看章节列表与评论
+  bool canRead;
 
   @override
   String toString() {

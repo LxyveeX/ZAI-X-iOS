@@ -5,6 +5,7 @@ import 'package:zai_x/app/app_style.dart';
 import 'package:zai_x/app/utils.dart';
 import 'package:zai_x/models/comic/detail_info.dart';
 import 'package:zai_x/modules/comic/detail/comic_detail_controller.dart';
+import 'package:zai_x/services/user_service.dart';
 import 'package:zai_x/widgets/net_image.dart';
 import 'package:zai_x/widgets/status/app_error_widget.dart';
 import 'package:zai_x/widgets/status/app_loadding_widget.dart';
@@ -290,7 +291,7 @@ class ComicDetailPage extends StatelessWidget {
                       // ),
                       _buildInfo(
                         title:
-                            "${Utils.formatTimestampToDate(controller.detail.value.lastUpdatetime)} ${controller.detail.value.status.map((e) => e.tagName).join("/")}",
+                            "${Utils.formatTimestampToDate(controller.detail.value.lastUpdatetime)} ${controller.detail.value.status.map((e) => e.tagName).join("/")}${controller.detail.value.isHide ? " · 神隐" : ""}",
                         iconData: Icons.schedule,
                       ),
                     ],
@@ -314,6 +315,7 @@ class ComicDetailPage extends StatelessWidget {
             ),
           ],
         ),
+        if (!controller.detail.value.canRead) _buildReadPermissionNotice(),
         AppStyle.vGap12,
         GestureDetector(
           onTap: () {
@@ -604,6 +606,37 @@ class ComicDetailPage extends StatelessWidget {
                 ),
               )
               .toList(),
+    );
+  }
+
+  /// 没有阅读权限时的说明；章节列表与评论仍然可以看
+  Widget _buildReadPermissionNotice() {
+    final logined = UserService.instance.logined.value;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.orange.withValues(alpha: .1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.lock_outline, size: 18, color: Colors.orange),
+            AppStyle.hGap8,
+            Expanded(
+              child: Text(
+                logined
+                    ? "当前账号暂时不能阅读这部作品（可能是等级不足或作品暂未开放），章节列表与评论仍可查看".i18n
+                    : "这部作品需要登录后才能阅读，章节列表与评论仍可查看".i18n,
+                style: const TextStyle(fontSize: 13, height: 1.4),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

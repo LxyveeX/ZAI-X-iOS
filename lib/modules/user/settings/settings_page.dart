@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:zai_x/app/app_color.dart';
 import 'package:zai_x/app/app_style.dart';
 import 'package:zai_x/modules/user/settings/settings_controller.dart';
 import 'package:get/get.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:zai_x/app/i18n.dart';
+import 'package:zai_x/services/comic_index/comic_index_service.dart';
 import 'package:zai_x/services/notification_service.dart';
 import 'package:zai_x/services/subscribe_notify_scheduler.dart';
 
@@ -103,8 +107,8 @@ class SettingsPage extends StatelessWidget {
               ListTile(
                 title: Text("检查间隔".i18n),
                 subtitle: Slider(
-                  value: controller.settings.subscribeNotifyHours.value
-                      .toDouble(),
+                  value:
+                      controller.settings.subscribeNotifyHours.value.toDouble(),
                   min: 1,
                   max: 24,
                   divisions: 23,
@@ -182,10 +186,21 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget buildComicSettings() {
+    final comicIndex = ComicIndexService.instance;
+    if (comicIndex.info.value == null) {
+      unawaited(comicIndex.loadInfo());
+    }
     return Obx(
       () => ListView(
         padding: AppStyle.edgeInsetsA12,
         children: [
+          SwitchListTile(
+            value: comicIndex.enabled.value,
+            onChanged: comicIndex.setEnabled,
+            title: Text("搜索时补上官方未收录的作品".i18n),
+            subtitle: Text("用每日更新的本地漫画索引，找出神隐、下架等官方搜索不会返回的作品".i18n),
+          ),
+          _buildComicIndexTile(comicIndex),
           SwitchListTile(
             value: controller.settings.comicReaderHD.value,
             onChanged: (e) {
@@ -570,5 +585,52 @@ class SettingsPage extends StatelessWidget {
       onPressed: onTap,
       child: child,
     );
+  }
+
+  /// 本地漫画索引：资料日期、笔数与手动更新
+  Widget _buildComicIndexTile(ComicIndexService comicIndex) {
+    final info = comicIndex.info.value;
+    String subtitle;
+    if (info == null) {
+      subtitle = "读取中".i18n;
+    } else {
+      final time = info.generatedTime;
+      String two(int v) => v.toString().padLeft(2, '0');
+      final date = time == null
+          ? ""
+          : "${time.year}-${two(time.month)}-${two(time.day)} ${two(time.hour)}:${two(time.minute)}";
+      subtitle =
+          "共 ${info.count} 部 · 资料时间 $date · ${info.downloaded ? "已从 GitHub 更新" : "App 内建"}"
+              .i18n;
+    }
+    return ListTile(
+      title: Text("本地漫画索引".i18n),
+      subtitle: Text(subtitle),
+      trailing: comicIndex.updating.value
+          ? const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : OutlinedButton(
+              onPressed: () => _updateComicIndex(comicIndex),
+              child: Text("检查更新".i18n),
+            ),
+    );
+  }
+
+  Future<void> _updateComicIndex(ComicIndexService comicIndex) async {
+    final result = await comicIndex.refresh(force: true);
+    switch (result) {
+      case ComicIndexUpdateResult.updated:
+        SmartDialog.showToast("已更新本地漫画索引".i18n);
+      case ComicIndexUpdateResult.upToDate:
+        SmartDialog.showToast("本地漫画索引已是最新".i18n);
+      case ComicIndexUpdateResult.failed:
+        SmartDialog.showToast("更新失败，请确认能连上 GitHub".i18n);
+      case ComicIndexUpdateResult.skipped:
+      case ComicIndexUpdateResult.busy:
+        break;
+    }
   }
 }

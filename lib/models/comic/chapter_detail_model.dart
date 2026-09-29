@@ -17,6 +17,7 @@ class ComicChapterDetailModel {
     required this.pageUrl,
     required this.picnum,
     required this.pageUrlHd,
+    this.canRead,
   });
 
   factory ComicChapterDetailModel.fromJson(Map<String, dynamic> json) {
@@ -47,6 +48,7 @@ class ComicChapterDetailModel {
       pageUrl: pageUrl!,
       picnum: asT<int>(json['picnum'])!,
       pageUrlHd: pageUrlHd!,
+      canRead: asT<bool?>(json['canRead']),
     );
   }
 
@@ -58,6 +60,12 @@ class ComicChapterDetailModel {
   List<String> pageUrl;
   int picnum;
   List<String> pageUrlHd;
+
+  /// 没有阅读权限时为 false，且 page_url 为空
+  bool? canRead;
+
+  /// 没有拿到任何图片（通常就是 canRead=false）
+  bool get isLocked => pageUrl.isEmpty && pageUrlHd.isEmpty;
 
   @override
   String toString() {
@@ -73,5 +81,6 @@ class ComicChapterDetailModel {
         'page_url': pageUrl,
         'picnum': picnum,
         'page_url_hd': pageUrlHd,
+        'canRead': canRead,
       };
 }

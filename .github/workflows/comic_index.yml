@@ -1,0 +1,100 @@
+name: comic-index
+# 每天更新「本地漫画索引」：官方搜索找不到的神隐、下架等作品，App 也能从这份清单搜到。
+# 产物放在 comic-index 分支（单一提交、每次强制覆盖，不会让仓库越长越大），
+# App 从 raw.githubusercontent.com（备援 jsDelivr）下载；打包时也会内建最新一份。
+# 平常只抓新作品，加上轮替的 1/7 旧作品（每本一周重新确认一次）；手动执行可选择全量重抓。
+on:
+  schedule:
+    - cron: "40 19 * * *" # 台北时间每天 03:40
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "全量重抓（约 9 万次请求，较久）"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: comic-index
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v7
+      # 只需要 dart；沿用与打包相同的 Flutter 版本与快取
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.2"
+          cache: true
+      - name: Load previous index
+        id: prev
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/prev" "$RUNNER_TEMP/out"
+          if git fetch --depth=1 origin comic-index 2>/dev/null; then
+            git show FETCH_HEAD:comic_index.tsv.gz > "$RUNNER_TEMP/prev/comic_index.tsv.gz"
+            echo "branch=true" >> "$GITHUB_OUTPUT"
+          else
+            # 第一次执行：以仓库内建的快照为底
+            cp assets/comic_index/comic_index.tsv.gz "$RUNNER_TEMP/prev/"
+            echo "branch=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Crawl
+        shell: bash
+        run: |
+          # 放到套件目录外执行，脚本只用 dart: 标准库，不需要 pub get
+          cp tools/comic_index/build_comic_index.dart "$RUNNER_TEMP/"
+          args=(--previous="$RUNNER_TEMP/prev/comic_index.tsv.gz" --out-dir="$RUNNER_TEMP/out"
+                --concurrency=3 --stop-after=400 --max-error-rate=0.02)
+          if [ "${{ inputs.full }}" = "true" ]; then
+            args+=(--rotate=1)
+          else
+            args+=(--rotate=7)
+          fi
+          # 分支已存在时，内容没变就不发布
+          if [ "${{ steps.prev.outputs.branch }}" = "true" ]; then
+            args+=(--skip-unchanged)
+          fi
+          dart "$RUNNER_TEMP/build_comic_index.dart" "${args[@]}"
+      - name: Publish to comic-index branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          out="$RUNNER_TEMP/out"
+          if [ ! -f "$out/comic_index.tsv.gz" ]; then
+            echo "内容没有变化，不发布。"
+            exit 0
+          fi
+          gzip -t "$out/comic_index.tsv.gz"
+          lines=$(gzip -dc "$out/comic_index.tsv.gz" | tail -n +2 | grep -c .)
+          count=$(jq -r .count "$out/comic_index.json")
+          if [ "$lines" != "$count" ]; then
+            echo "笔数不符（$lines / $count），不发布。"
+            exit 1
+          fi
+          cat > "$out/README.md" <<'EOF'
+          # comic-index
+
+          再漫画X「本地漫画索引」的资料分支，由 `.github/workflows/comic_index.yml` 每天自动更新
+          （单一提交、每次强制覆盖）。产生工具：`tools/comic_index/build_comic_index.dart`。
+
+          - `comic_index.tsv.gz`：全站作品清单（id、标题、别名、作者、旗标、状态、热度）
+          - `comic_index.json`：版本、笔数与档案大小
+
+          App 会从这里下载最新清单，让官方搜索找不到的神隐等作品也能被搜到。
+          EOF
+          cd "$out"
+          git init -q -b comic-index
+          git add comic_index.tsv.gz comic_index.json README.md
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit -q -m "comic index $(jq -r .version comic_index.json) ($count 部)"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:refs/heads/comic-index
+          echo "已发布 $count 部。"

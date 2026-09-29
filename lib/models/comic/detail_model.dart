@@ -53,6 +53,8 @@ class ComicDetailDataModel {
     this.authors,
     this.chapters,
     this.dhUrlLinks,
+    this.hidden,
+    this.canRead,
   });
 
   factory ComicDetailDataModel.fromJson(Map<String, dynamic> json) {
@@ -126,6 +128,8 @@ class ComicDetailDataModel {
       authors: authors,
       chapters: chapters,
       dhUrlLinks: dhUrlLinks,
+      hidden: asT<int?>(json['hidden']),
+      canRead: asT<bool?>(json['canRead']),
     );
   }
 
@@ -145,6 +149,12 @@ class ComicDetailDataModel {
   List<ComicDetailDataTagModel>? authors;
   List<ComicDetailChapterModel>? chapters;
   List<DhUrlLinks>? dhUrlLinks;
+
+  /// 1=神隐（官方搜索、列表都不会出现）；其他非 0 值是别种隐藏
+  int? hidden;
+
+  /// 目前的账号（或未登录）能否阅读；为 false 时章节接口不会给图片
+  bool? canRead;
 
   @override
   String toString() {
@@ -168,6 +178,8 @@ class ComicDetailDataModel {
         'authors': authors,
         'chapters': chapters,
         'dh_url_links': dhUrlLinks,
+        'hidden': hidden,
+        'canRead': canRead,
       };
 }
 
