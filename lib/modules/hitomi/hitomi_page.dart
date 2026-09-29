@@ -278,7 +278,8 @@ class _HitomiPageState extends State<HitomiPage> {
                         context: context,
                         builder: (context) => AlertDialog(
                                 title: Text('隐藏入口'.i18n),
-                                content: Text('收藏与阅读记录会保留，再次点击作者名十次可开启。'.i18n),
+                                content:
+                                    Text('收藏与阅读记录会保留，再次点击作者名十次并输入指令可开启。'.i18n),
                                 actions: [
                                   TextButton(
                                       onPressed: () =>
