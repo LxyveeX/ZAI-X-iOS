@@ -54,6 +54,7 @@ dependencies:
   file_selector: ^1.0.3 #文件选择
   archive: ^4.0.9 #cbz 导出
   windows_single_instance: ^1.2.0 #Windows单实例
+  ffi: ^2.2.0 #Windows 关闭主视窗
   
   flutter: 
     sdk: flutter

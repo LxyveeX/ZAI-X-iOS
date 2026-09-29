@@ -13,6 +13,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:zai_x/app/i18n.dart';
 import 'package:zai_x/app/log.dart';
+import 'package:zai_x/app/single_instance.dart';
 import 'package:zai_x/app/utils.dart';
 import 'package:zai_x/models/version_model.dart';
 import 'package:zai_x/services/resumable_download.dart';
@@ -185,7 +186,7 @@ class AppUpdateService {
     } catch (e) {
       Log.logPrint(e);
     }
-    exit(0);
+    await quitApp();
   }
 
   /// Windows：显示上次覆盖更新的结果（启动时呼叫）

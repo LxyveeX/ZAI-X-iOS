@@ -10,6 +10,7 @@ import 'package:zai_x/app/utils.dart';
 import 'package:get/get.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:zai_x/app/i18n.dart';
+import 'package:zai_x/app/single_instance.dart';
 
 /// 桌面端也允许用鼠标拖动滚动（PageView 默认不支持鼠标拖拽）
 class _MouseScrollBehavior extends MaterialScrollBehavior {
@@ -187,7 +188,7 @@ class DialogUtils {
       barrierDismissible: false,
     ).then((value) {
       if (!value) {
-        exit(0);
+        quitApp();
       }
     });
   }

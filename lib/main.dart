@@ -50,8 +50,9 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  if (Platform.isWindows) {
-    await ensureSingleInstance();
+  // 已经有视窗开着（或前一个还在关闭）时，这个进程直接结束，不再初始化
+  if (Platform.isWindows && !await ensureSingleInstance()) {
+    return;
   }
   await Hive.initFlutter();
   //初始化服务
