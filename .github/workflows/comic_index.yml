@@ -1,8 +1,8 @@
 name: comic-index
 # 每天更新「本地漫画索引」：官方搜索找不到的神隐、下架等作品，App 也能从这份清单搜到。
 # 产物放在 comic-index 分支（单一提交、每次强制覆盖，不会让仓库越长越大），
-# App 从 raw.githubusercontent.com（备援 jsDelivr）下载；打包时也会内建最新一份。
-# 平常只抓新作品，加上轮替的 1/7 旧作品（每本一周重新确认一次）；手动执行可选择全量重抓。
+# App 依序从 raw.githubusercontent.com、gh-proxy.com 加速代理、jsDelivr 下载；打包时也会内建最新一份。
+# 平常只抓新作品，加上轮替的 1/14 旧作品（每本两周重新确认一次）；手动执行可选择全量重抓。
 on:
   schedule:
     - cron: "40 19 * * *" # 台北时间每天 03:40
@@ -55,7 +55,7 @@ jobs:
           if [ "${{ inputs.full }}" = "true" ]; then
             args+=(--rotate=1)
           else
-            args+=(--rotate=7)
+            args+=(--rotate=14)
           fi
           # 分支已存在时，内容没变就不发布
           if [ "${{ steps.prev.outputs.branch }}" = "true" ]; then

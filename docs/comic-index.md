@@ -20,12 +20,13 @@ tools/comic_index/build_comic_index.dart ── 逐一讀取詳情（帶 _v）
         ├─ assets/comic_index/        App 內建快照（第一次使用、連不上 GitHub 時用）
         └─ comic-index 分支            .github/workflows/comic_index.yml 每天更新（單一提交、強制覆蓋）
                 │
-                └─ App 下載到本機：raw.githubusercontent.com，失敗改走 jsDelivr
+                └─ App 下載到本機：依序試 raw.githubusercontent.com → gh-proxy.com 加速代理 → jsDelivr
 ```
 
-- 每天台北時間 03:40 增量更新：只抓新 ID，加上輪替的 1/7 舊 ID（每本一週重新確認一次），內容沒變就不發布。手動執行 workflow 可選全量重抓。
+- 每天台北時間 03:40 增量更新：只抓新 ID，加上輪替的 1/14 舊 ID（每本兩週重新確認一次，每天約 6,700 個請求、GitHub 上約 11 分鐘），內容沒變就不發布。手動執行 workflow 可選全量重抓。
 - 正式打包（`build_release.yml`）建置前會換成 comic-index 分支的最新清單並核對筆數，取不到就沿用倉庫內快照。
-- App 每 24 小時最多自動檢查一次；手機只在 Wi-Fi／有線網路時自動下載（約 2.6 MB），行動網路可到「設定 → 漫畫 → 本地漫畫索引 → 檢查更新」手動更新。下載後核對版本與筆數才替換。
+- App 在搜尋漫畫時自動檢查更新：真的連上（已是最新或更新成功）後 24 小時內不再檢查；所有來源都連不上時，2 小時後再試。手機只在 Wi-Fi／有線網路時自動檢查（約 2.6 MB）。行動網路可到「我的 → 更多設定 → 漫畫 → 本地漫畫索引 → 檢查更新」手動更新，手動不受這些限制。
+- 下載來源依序為 raw.githubusercontent.com、gh-proxy.com（第三方公益加速代理，在原網址前加上 `https://gh-proxy.com/`）、jsDelivr。單一來源讀 meta 超過 15 秒、下載超過 2 分鐘，或檔案大小、版本、筆數不符，就換下一個來源；全部通過才替換本機清單。
 - 搜尋結果頂端顯示「官方搜索没有收录的作品」：官方結果還有下一頁時，只補神隱或 copyright=1 的作品；官方結果已完整（不足一頁）時，本地有、官方沒有的都補上；官方搜尋失敗時全部顯示。已出現在這個區塊的作品不會在官方結果重複列出。
 - 比對會做繁轉簡（`lib/app/t2s_chars.g.dart`，由 `tools/i18n/gen_t2s.py` 從 OpenCC 產生）、全形轉半形、英文轉小寫並去掉空白與標點；以空白分隔的多個關鍵字須全部命中；依「標題相同 → 別名相同 → 標題開頭 → 標題包含 → 別名包含 → 作者」排序。
 - 設定可關閉「搜索时补上官方未收录的作品」。
@@ -48,7 +49,7 @@ tools/comic_index/build_comic_index.dart ── 逐一讀取詳情（帶 _v）
 dart run tools/comic_index/build_comic_index.dart --cache=$env:TEMP\comic_index_raw.jsonl --out-dir=assets/comic_index --floor=89000
 
 # 增量（與 CI 相同）
-dart run tools/comic_index/build_comic_index.dart --previous=assets/comic_index/comic_index.tsv.gz --rotate=7 --out-dir=$env:TEMP\comic_index_out --skip-unchanged
+dart run tools/comic_index/build_comic_index.dart --previous=assets/comic_index/comic_index.tsv.gz --rotate=14 --out-dir=$env:TEMP\comic_index_out --skip-unchanged
 
 # OpenCC 更新後重建繁轉簡字表
 python tools/i18n/gen_t2s.py
@@ -59,6 +60,7 @@ python tools/i18n/gen_t2s.py
 - 旗標無法完全預測官方搜尋會不會回傳；官方結果超過一頁時，少數未標旗標、但官方搜不到的作品不會補上（輸入更完整的書名即可）。
 - `_v` 的門檻由伺服器決定，日後若提高，需要同步調整 `Api.APP_VERSION` 與爬蟲的 `kAppVersion`。
 - 本地結果的封面、題材、最新章節是顯示時才向詳情介面補抓，同時最多 3 個請求；展開後最多顯示 50 部。
+- gh-proxy.com 是第三方公益服務，可能失效或被封鎖，失效時會改用 jsDelivr；經代理拿到的內容同樣要通過大小、版本與筆數檢查才會採用。
 
 ## 驗證紀錄（2026-09-29）
 
@@ -68,4 +70,5 @@ python tools/i18n/gen_t2s.py
 - MuMu 線上更新：「檢查更新」在版本相同時顯示已是最新；資料分支換新版後可下載、驗證並替換，重開 App 後仍優先使用下載的版本。
 - [CI 36545939679](https://github.com/funkeyyou/zaimanhua/actions/runs/36545939679)（功能分支手動觸發）：analyze、測試、Android／Windows 建置全部成功，兩個建置 job 都換上 comic-index 分支的清單。
 - [comic-index 36547238935](https://github.com/funkeyyou/zaimanhua/actions/runs/36547238935)：GitHub runner 可連上 v4api，增量（rotate=7）掃 13,064 個 ID、0 失敗、約 22 分鐘，新增 1 部後發佈 82,951 部。
-- 尚未驗證：模擬器無法用 adb 輸入中文，中文書名搜尋只由單元測試覆蓋；Windows 版未實機測試。
+- 追加調整：每日更新改成 14 天輪一遍；App 改成真的連上才開始計時（全部失敗 2 小時後重試），下載來源加入 gh-proxy.com。新增 5 項測試（共 129 項通過），涵蓋 GitHub 連不上改走 gh-proxy、檔案不完整換來源、失敗不占用 24 小時額度。以 App 同一個 HTTP 套件實際經 gh-proxy 下載 comic-index：82,951 部，雜湊與原檔相同。MuMu 覆蓋安裝後手動更新成功換成 17:31 版，搜尋與日誌正常。
+- 尚未驗證：模擬器無法用 adb 輸入中文，中文書名搜尋只由單元測試覆蓋；Windows 版未實機測試；gh-proxy 在大陸直連網路下的可用性（本機測試可能經過代理）。

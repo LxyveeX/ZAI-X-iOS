@@ -10,7 +10,7 @@
 //     dart run tools/comic_index/build_comic_index.dart \
 //       --cache=%TEMP%/comic_index_raw.jsonl --out-dir=assets/comic_index --floor=89000
 //   增量（CI 每天）：
-//     dart build_comic_index.dart --previous=prev/comic_index.tsv.gz --rotate=7 \
+//     dart build_comic_index.dart --previous=prev/comic_index.tsv.gz --rotate=14 \
 //       --out-dir=out --skip-unchanged
 //
 // 参数：

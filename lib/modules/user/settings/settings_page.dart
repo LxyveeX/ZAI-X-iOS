@@ -627,7 +627,7 @@ class SettingsPage extends StatelessWidget {
       case ComicIndexUpdateResult.upToDate:
         SmartDialog.showToast("本地漫画索引已是最新".i18n);
       case ComicIndexUpdateResult.failed:
-        SmartDialog.showToast("更新失败，请确认能连上 GitHub".i18n);
+        SmartDialog.showToast("更新失败，请检查网络后再试".i18n);
       case ComicIndexUpdateResult.skipped:
       case ComicIndexUpdateResult.busy:
         break;
