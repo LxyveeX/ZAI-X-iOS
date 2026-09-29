@@ -26,24 +26,40 @@ class CommonRequest {
         },
       ),
     );
-    return _parseRelease(result.data as Map);
+    return parseRelease(
+      result.data as Map,
+      android: Platform.isAndroid,
+      windows: Platform.isWindows,
+    );
   }
 
   /// 把 Release 转换成版本信息
   ///
-  /// tag 形如 v1.4.0；下载地址优先取当前平台对应的资源。
-  VersionModel _parseRelease(Map json) {
+  /// tag 形如 v1.4.0；下载地址优先取当前平台对应的资源，并带上资源的
+  /// SHA-256 与大小，供下载后校验。平台以参数传入方便测试。
+  static VersionModel parseRelease(
+    Map json, {
+    required bool android,
+    required bool windows,
+  }) {
     var tag = (json["tag_name"] ?? "").toString();
     var version = tag.startsWith("v") ? tag.substring(1) : tag;
     var assets = (json["assets"] as List?) ?? const [];
     var downloadUrl = (json["html_url"] ?? "").toString();
+    var sha256 = "";
+    var size = 0;
     for (var item in assets) {
       var name = (item["name"] ?? "").toString().toLowerCase();
       var url = (item["browser_download_url"] ?? "").toString();
       if (url.isEmpty) continue;
-      if ((Platform.isAndroid && name.endsWith(".apk")) ||
-          (Platform.isWindows && name.endsWith(".zip"))) {
+      if ((android && name.endsWith(".apk")) ||
+          (windows && name.endsWith(".zip"))) {
         downloadUrl = url;
+        var digest = (item["digest"] ?? "").toString();
+        if (digest.startsWith("sha256:")) {
+          sha256 = digest.substring("sha256:".length).toLowerCase();
+        }
+        size = (item["size"] as num?)?.toInt() ?? 0;
         break;
       }
     }
@@ -52,11 +68,13 @@ class CommonRequest {
       versionNum: _parseVersionNum(version),
       versionDesc: (json["body"] ?? "").toString().trim(),
       downloadUrl: downloadUrl,
+      sha256: sha256,
+      size: size,
     );
   }
 
   /// 1.4.0 -> 10400，与 Utils.parseVersion 保持一致
-  int _parseVersionNum(String version) {
+  static int _parseVersionNum(String version) {
     var num = "";
     for (var item in version.split(".")) {
       var digits = item.replaceAll(RegExp(r'[^0-9]'), "");

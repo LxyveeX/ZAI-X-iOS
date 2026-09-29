@@ -13,6 +13,8 @@ class VersionModel {
     required this.versionNum,
     required this.versionDesc,
     required this.downloadUrl,
+    this.sha256 = '',
+    this.size = 0,
   });
 
   factory VersionModel.fromJson(Map<String, dynamic> json) => VersionModel(
@@ -27,6 +29,12 @@ class VersionModel {
   String versionDesc;
   String downloadUrl;
 
+  /// 安装档的 SHA-256（GitHub Release 资产的 digest），没有则为空字串
+  String sha256;
+
+  /// 安装档大小（bytes），不知道则为 0
+  int size;
+
   @override
   String toString() {
     return jsonEncode(this);
@@ -37,5 +45,7 @@ class VersionModel {
         'version_num': versionNum,
         'version_desc': versionDesc,
         'download_url': downloadUrl,
+        'sha256': sha256,
+        'size': size,
       };
 }

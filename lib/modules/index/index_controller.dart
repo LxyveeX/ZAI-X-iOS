@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:zai_x/services/app_settings_service.dart';
+import 'package:zai_x/services/app_update_service.dart';
 import 'package:zai_x/app/dialog_utils.dart';
 import 'package:zai_x/app/event_bus.dart';
 import 'package:zai_x/app/utils.dart';
@@ -87,6 +88,8 @@ class IndexController extends GetxController {
   }
 
   void showFirstRun() async {
+    // Windows 覆盖更新后第一次启动，先告诉使用者结果
+    await AppUpdateService.showWindowsUpdateOutcome();
     if (AppSettingsService.instance.firstRun) {
       AppSettingsService.instance.setNoFirstRun();
       DialogUtils.showStatement();
