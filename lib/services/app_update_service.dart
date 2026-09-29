@@ -287,49 +287,67 @@ class AppUpdateService {
   static void _showProgress() {
     SmartDialog.show(
       clickMaskDismiss: false,
-      builder: (_) => Container(
-        width: 260,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Get.theme.cardColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Obx(
-              () => Text(
-                stage.value.i18n,
-                textAlign: TextAlign.center,
-              ),
+      builder: (_) => const UpdateProgressCard(),
+    );
+  }
+}
+
+/// 下载更新的进度框
+///
+/// SmartDialog 用一层透明 Material 包住内容，那层的预设文字是深色，
+/// 深色主题下标题会和卡片融在一起，所以标题直接取 App 主题的样式。
+class UpdateProgressCard extends StatelessWidget {
+  const UpdateProgressCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    var theme = Get.theme;
+    return Container(
+      width: 260,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Obx(
+            () => Text(
+              AppUpdateService.stage.value.i18n,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium,
             ),
-            const SizedBox(height: 16),
-            Obx(
-              () => LinearProgressIndicator(
-                value: progress.value < 0 ? null : progress.value,
-              ),
+          ),
+          const SizedBox(height: 16),
+          Obx(
+            () => LinearProgressIndicator(
+              value: AppUpdateService.progress.value < 0
+                  ? null
+                  : AppUpdateService.progress.value,
             ),
-            const SizedBox(height: 8),
-            Obx(
-              () => Text(
-                progress.value >= 0
-                    ? "${(progress.value * 100).toStringAsFixed(0)}%"
-                    : (cancellable.value ? "连接中..." : "请稍候...").i18n,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
+          ),
+          const SizedBox(height: 8),
+          Obx(
+            () => Text(
+              AppUpdateService.progress.value >= 0
+                  ? "${(AppUpdateService.progress.value * 100).toStringAsFixed(0)}%"
+                  : (AppUpdateService.cancellable.value ? "连接中..." : "请稍候...")
+                      .i18n,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
-            Obx(
-              () => cancellable.value
-                  ? TextButton(
-                      onPressed: cancel,
-                      child: Text("取消".i18n),
-                    )
-                  : const SizedBox(height: 16),
-            ),
-          ],
-        ),
+          ),
+          Obx(
+            () => AppUpdateService.cancellable.value
+                ? TextButton(
+                    onPressed: AppUpdateService.cancel,
+                    child: Text("取消".i18n),
+                  )
+                : const SizedBox(height: 16),
+          ),
+        ],
       ),
     );
   }
