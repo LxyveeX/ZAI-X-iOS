@@ -14,6 +14,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:zai_x/app/i18n.dart';
 import 'package:zai_x/app/log.dart';
 import 'package:zai_x/models/version_model.dart';
+import 'package:zai_x/services/resumable_download.dart';
 import 'package:zai_x/services/windows_self_update.dart';
 
 /// App 内更新
@@ -124,12 +125,26 @@ class AppUpdateService {
     var launched = false;
     try {
       await updater.resetWorkDir();
-      await Dio().download(
-        version.downloadUrl,
-        updater.zipFile.path,
-        cancelToken: _cancelToken,
-        onReceiveProgress: _onReceiveProgress,
-      );
+      try {
+        // 线路不稳时从断点续传，重试用完才退回浏览器
+        await downloadWithResume(
+          Dio(BaseOptions(connectTimeout: const Duration(seconds: 20))),
+          version.downloadUrl,
+          updater.zipFile,
+          cancelToken: _cancelToken,
+          expectedSize: version.size,
+          onProgress: _onReceiveProgress,
+          onRetry: (_) => stage.value = "网络不稳，正在重新连接",
+        );
+      } on DioException catch (e) {
+        if (CancelToken.isCancel(e)) {
+          SmartDialog.dismiss();
+          return;
+        }
+        throw _DownloadFailed(e);
+      } catch (e) {
+        throw _DownloadFailed(e);
+      }
       cancellable.value = false;
       progress.value = -1;
       stage.value = "正在校验更新档";
@@ -143,12 +158,9 @@ class AppUpdateService {
       stage.value = "即将重新启动以完成更新";
       await updater.launch(appPid: pid, version: version.version);
       launched = true;
-    } on DioException catch (e) {
+    } on _DownloadFailed catch (e) {
       SmartDialog.dismiss();
-      if (CancelToken.isCancel(e)) {
-        return;
-      }
-      await _fallbackToBrowser(version, e);
+      await _fallbackToBrowser(version, e.error);
     } on UpdateIntegrityException catch (e) {
       SmartDialog.dismiss();
       Log.logPrint(e);
@@ -217,6 +229,10 @@ class AppUpdateService {
   }
 
   static void _onReceiveProgress(int received, int total) {
+    // 重新连上后把「正在重新连接」换回下载中
+    if (cancellable.value) {
+      stage.value = "正在下载新版本";
+    }
     progress.value = total > 0 ? received / total : -1;
   }
 
@@ -290,6 +306,15 @@ class AppUpdateService {
       builder: (_) => const UpdateProgressCard(),
     );
   }
+}
+
+/// 下载步骤失败（包含续传重试用完）
+class _DownloadFailed implements Exception {
+  const _DownloadFailed(this.error);
+  final Object error;
+
+  @override
+  String toString() => error.toString();
 }
 
 /// 下载更新的进度框
