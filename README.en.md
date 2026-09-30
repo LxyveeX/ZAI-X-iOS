@@ -1,6 +1,6 @@
 # ZAI-X (再漫画X)
 
-[English](README.en.md) · [繁體中文 / Full reference](README.md) · [Download](https://github.com/funkeyyou/zaimanhua/releases/latest) · [Report an issue](https://github.com/funkeyyou/zaimanhua/issues)
+[English](README.en.md) · [简体中文 / Full reference](README.md) · [繁體中文](README.zh-TW.md) · [Download](https://github.com/funkeyyou/zaimanhua/releases/latest) · [Report an issue](https://github.com/funkeyyou/zaimanhua/issues)
 
 **An unofficial third-party client for Zaimanhua (再漫画, zaimanhua.com) on Android and Windows.**
 
@@ -47,7 +47,7 @@ AI search sends only your description and the candidates' public information (ti
 
 - Use Flutter 3.47.2. On Windows, build from an ASCII-only path (a directory junction works), because non-ASCII paths break native builds.
 - AI search needs an OpenAI-compatible `/chat/completions` endpoint. Put `{"baseUrl": "https://example.com/v1", "apiKey": "...", "model": "..."}` in a JSON file outside the repository, run `dart run tools/ai/make_ai_defines.dart --in config.json --out ai_defines.json`, then build with `--dart-define-from-file=ai_defines.json`. CI reads the same JSON from the `ZAI_AI_CONFIG` secret. Without it, the AI toggle is hidden.
-- See the [full Chinese reference](README.md#開發) and the [roadmap](docs/ROADMAP.md) for details.
+- See the [full Chinese reference](README.md#开发) and the [roadmap](docs/ROADMAP.md) for details.
 
 ## Credits and license
 
