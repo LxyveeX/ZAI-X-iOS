@@ -4,7 +4,7 @@
 
 **再漫画（zaimanhua.com）的第三方客户端，Android 与 Windows 都能用。**
 
-再漫畫第三方客戶端：看漫畫、輕小說與資訊，支援 AI 搜尋、神隱漫畫、雙頁閱讀與每日自動簽到。
+再漫画第三方客户端：看漫画、轻小说与资讯，支持 AI 搜索、神隐漫画、双页阅读与每日自动签到。
 Unofficial Zaimanhua (再漫画) client for Android and Windows: manga, light novels and news.
 
 - **AI 搜索**：用一句话描述想看的作品，例如“女主很强的奇幻冒险”“类似《葬送的芙莉莲》的作品”，AI 读完简介后挑出符合的漫画或轻小说，并写上推荐理由。
