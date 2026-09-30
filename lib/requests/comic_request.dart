@@ -12,6 +12,7 @@ import 'package:zai_x/models/comic/chapter_detail_web_model.dart';
 import 'package:zai_x/models/comic/chapter_info.dart';
 import 'package:zai_x/models/comic/comic_brief.dart';
 import 'package:zai_x/models/comic/comic_related_model.dart';
+import 'package:zai_x/models/comic/comic_topic_model.dart';
 import 'package:zai_x/models/comic/detail_info.dart';
 import 'package:zai_x/models/comic/detail_model.dart';
 import 'package:zai_x/models/comic/detail_v1_model.dart';
@@ -19,7 +20,6 @@ import 'package:zai_x/models/comic/rank_item_model.dart';
 import 'package:zai_x/models/comic/recommend_model.dart';
 import 'package:zai_x/models/comic/search_item.dart';
 import 'package:zai_x/models/comic/search_model.dart';
-import 'package:zai_x/models/comic/special_model.dart';
 import 'package:zai_x/models/comic/update_item_model.dart';
 import 'package:zai_x/models/comic/view_point_model.dart';
 import 'package:zai_x/models/comic/web_search_model.dart';
@@ -29,7 +29,6 @@ import 'package:zai_x/requests/common/http_client.dart';
 import 'package:zai_x/services/comic_download_service.dart';
 import 'package:zai_x/services/user_service.dart';
 
-import '../models/comic/special_detail_model.dart';
 import 'package:zai_x/app/i18n.dart';
 
 class ComicRequest {
@@ -243,27 +242,31 @@ class ComicRequest {
     return map;
   }
 
-  /// 专题
-  Future<List<ComicSpecialModel>> special({int page = 1}) async {
-    var list = <ComicSpecialModel>[];
+  /// 专题合集，新的在前
+  /// - [page] 页数，从 1 开始；超过最后一页回传空清单
+  /// - [size] 每页笔数，服务端上限 100
+  Future<List<ComicTopic>> topics({int page = 1, int size = 24}) async {
     var result = await HttpClient.instance.getJson(
-      '/subject/0/$page.json',
+      '/zt/h5/list',
+      baseUrl: Api.BASE_URL_API,
+      queryParameters: {"page": page, "size": size},
       checkCode: true,
     );
-    for (var item in result) {
-      list.add(ComicSpecialModel.fromJson(item));
-    }
-    return list;
+    return ComicTopic.listFromJson(result);
   }
 
-  /// 专题
-  Future<ComicSpecialDetailModel> specialDetail({required int id}) async {
+  /// 专题详情
+  ///
+  /// 登录时带上 token，收录漫画的「已订阅」才会准确。
+  Future<ComicTopicDetail> topicDetail({required int id}) async {
     var result = await HttpClient.instance.getJson(
-      '/subject/$id.json',
+      '/zt/h5/detail',
+      baseUrl: Api.BASE_URL_API,
+      queryParameters: {"id": id},
+      needLogin: true,
       checkCode: true,
     );
-
-    return ComicSpecialDetailModel.fromJson(result);
+    return ComicTopicDetail.fromJson(result);
   }
 
   /// 作者详情

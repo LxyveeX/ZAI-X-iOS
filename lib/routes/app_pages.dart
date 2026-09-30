@@ -7,6 +7,7 @@ import 'package:zai_x/modules/comic/reader/comic_reader_controller.dart';
 import 'package:zai_x/modules/comic/reader/comic_reader_page.dart';
 import 'package:zai_x/modules/comic/search/comic_search_page.dart';
 import 'package:zai_x/modules/comic/select_chapter/comic_select_chapter_page.dart';
+import 'package:zai_x/modules/comic/special/special_list_page.dart';
 import 'package:zai_x/modules/comic/special_detail/special_detail_page.dart';
 import 'package:zai_x/modules/common/comment/add_comment_page.dart';
 import 'package:zai_x/modules/common/comment/comment_page.dart';
@@ -150,11 +151,18 @@ class AppPages {
           ),
         );
       case RoutePath.kSpecialDetail:
+        final specialArg = settings.arguments;
         return GetPageRoute(
           settings: settings,
           page: () => SpecialDetailPage(
-            settings.arguments as int,
+            specialArg is Map ? specialArg["id"] as int : specialArg as int,
+            fromList: specialArg is Map && specialArg["fromList"] == true,
           ),
+        );
+      case RoutePath.kSpecialList:
+        return GetPageRoute(
+          settings: settings,
+          page: () => SpecialListPage(),
         );
       case RoutePath.kComicAuthorDetail:
         return GetPageRoute(

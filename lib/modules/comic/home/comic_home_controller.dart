@@ -8,7 +8,6 @@ import 'package:zai_x/modules/comic/home/category/comic_category_controller.dart
 import 'package:zai_x/modules/comic/home/latest/comic_latest_controller.dart';
 import 'package:zai_x/modules/comic/home/rank/comic_rank_controller.dart';
 import 'package:zai_x/modules/comic/home/recommend/comic_recommend_controller.dart';
-//import 'package:zai_x/modules/comic/home/special/comic_special_controller.dart';
 import 'package:zai_x/routes/app_navigator.dart';
 import 'package:get/get.dart';
 
@@ -45,9 +44,6 @@ class ComicHomeController extends GetxController
     } else if (tabIndex == 3) {
       controller = Get.find<ComicRankController>();
     }
-    //  else if (tabIndex == 4) {
-    //   controller = Get.find<ComicSpecialController>();
-    // }
     controller?.scrollToTopOrRefresh();
   }
 

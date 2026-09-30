@@ -4,7 +4,6 @@ import 'package:zai_x/modules/comic/home/comic_home_controller.dart';
 import 'package:zai_x/modules/comic/home/latest/comic_latest_view.dart';
 import 'package:zai_x/modules/comic/home/rank/comic_rank_view.dart';
 import 'package:zai_x/modules/comic/home/recommend/comic_recommend_view.dart';
-//import 'package:zai_x/modules/comic/home/special/comic_special_view.dart';
 import 'package:zai_x/widgets/tab_appbar.dart';
 import 'package:get/get.dart';
 import 'package:zai_x/app/i18n.dart';
@@ -21,7 +20,6 @@ class ComicHomePage extends GetView<ComicHomeController> {
           Tab(text: "更新".i18n),
           Tab(text: "分类".i18n),
           Tab(text: "排行".i18n),
-          //  Tab(text: "专题"),
         ],
         controller: controller.tabController,
         action: IconButton(
@@ -38,7 +36,6 @@ class ComicHomePage extends GetView<ComicHomeController> {
           ComicLatestView(),
           ComicCategoryView(),
           ComicRankView(),
-          //ComicSpecialView(),
         ],
       ),
     );

@@ -18,6 +18,9 @@ class Api {
   /// V3接口，无加密
   static const String BASE_URL = "https://v4api.zaimanhua.com/app/v1";
 
+  /// 官方 App 较新的接口（专题等）
+  static const String BASE_URL_API = "https://v4api.zaimanhua.com/api/v1";
+
   /// 用户
   static const String BASE_URL_USER = "https://account-api.zaimanhua.com/v1";
 

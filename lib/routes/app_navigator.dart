@@ -155,8 +155,17 @@ class AppNavigator {
   }
 
   /// 打开专题详情
-  static void toSpecialDetail(int id) {
-    toContentPage(RoutePath.kSpecialDetail, arg: id);
+  /// - [fromList] 从专题合集点进来，「全部专题」按钮改成返回
+  static void toSpecialDetail(int id, {bool fromList = false}) {
+    toContentPage(
+      RoutePath.kSpecialDetail,
+      arg: fromList ? {"id": id, "fromList": true} : id,
+    );
+  }
+
+  /// 打开专题合集
+  static void toSpecialList() {
+    toContentPage(RoutePath.kSpecialList);
   }
 
   /// 打开漫画搜索

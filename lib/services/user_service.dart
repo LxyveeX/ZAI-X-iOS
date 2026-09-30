@@ -66,6 +66,9 @@ class UserService extends GetxService {
   /// 已经订阅的漫画ID
   var subscribedComicIds = RxSet<int>();
 
+  /// 订阅时每个请求最多带几个 ID
+  static const int kSubscribeBatch = 50;
+
   /// 已经订阅的小说ID
   var subscribedNovelIds = RxSet<int>();
 
@@ -287,19 +290,27 @@ class UserService extends GetxService {
   }
 
   /// 添加订阅
+  ///
+  /// 一次送太多 ID 可能被服务端拒绝（例如专题「订阅全部」），每 [kSubscribeBatch] 个分一批。
   Future<bool> addSubscribe(List<int> ids, int type) async {
     try {
       if (!await login()) {
         return false;
       }
-      await request.addSubscribe(
-        ids: ids,
-        type: type,
-      );
-      if (type == AppConstant.kTypeComic) {
-        subscribedComicIds.addAll(ids);
-      } else if (type == AppConstant.kTypeNovel) {
-        subscribedNovelIds.addAll(ids);
+      for (var start = 0; start < ids.length; start += kSubscribeBatch) {
+        final end = start + kSubscribeBatch < ids.length
+            ? start + kSubscribeBatch
+            : ids.length;
+        final batch = ids.sublist(start, end);
+        await request.addSubscribe(
+          ids: batch,
+          type: type,
+        );
+        if (type == AppConstant.kTypeComic) {
+          subscribedComicIds.addAll(batch);
+        } else if (type == AppConstant.kTypeNovel) {
+          subscribedNovelIds.addAll(batch);
+        }
       }
 
       SmartDialog.showToast("订阅成功".i18n);

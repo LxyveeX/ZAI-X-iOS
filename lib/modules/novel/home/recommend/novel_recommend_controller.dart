@@ -55,6 +55,9 @@ class NovelRecommendController extends BasePageController<NovelRecommendModel> {
       //直接跳转至网页
       launchUrlString(
           "http://m.forum.idmzj.com/thread/detail?tid=${item.objId}");
+    } else if (item.type == 18) {
+      //专题合集=18
+      AppNavigator.toSpecialList();
     } else {
       SmartDialog.showToast("未知类型，无法跳转".i18n);
     }

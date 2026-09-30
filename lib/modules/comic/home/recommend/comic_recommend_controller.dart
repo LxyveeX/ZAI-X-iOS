@@ -4,7 +4,6 @@ import 'package:zai_x/modules/index/index_controller.dart';
 import 'package:zai_x/app/controller/base_controller.dart';
 import 'package:zai_x/app/log.dart';
 import 'package:zai_x/models/comic/recommend_model.dart';
-import 'package:zai_x/modules/comic/home/comic_home_controller.dart';
 import 'package:zai_x/requests/comic_request.dart';
 import 'package:zai_x/routes/app_navigator.dart';
 import 'package:zai_x/services/user_service.dart';
@@ -139,14 +138,12 @@ class ComicRecommendController extends BasePageController<ComicRecommendModel> {
       // AppNavigator.toWebView(
       //   "http://m.forum.dmzj.com/thread/detail?tid=${item.objId}",
       // );
+    } else if (item.type == 18) {
+      //专题合集=18
+      AppNavigator.toSpecialList();
     } else {
       SmartDialog.showToast("未知类型，无法跳转".i18n);
     }
-  }
-
-  void toSpecial() {
-    var homeController = Get.find<ComicHomeController>();
-    homeController.tabController.animateTo(3);
   }
 
   void toMySubscribe() {

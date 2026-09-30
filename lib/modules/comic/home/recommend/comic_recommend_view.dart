@@ -70,6 +70,7 @@ class ComicRecommendView extends StatelessWidget {
           }
 
           //火热专题\美漫大事件\条漫
+          //火热专题固定只有 4 项，合集由其中的「漫画专题大合集」进入，不另外放「查看更多」
           if (item.categoryId == 48 ||
               item.categoryId == 53 ||
               item.categoryId == 55) {
@@ -77,9 +78,6 @@ class ComicRecommendView extends StatelessWidget {
               context,
               child: buildTwoColumnGridView(item.data),
               title: item.title.toString(),
-              action: item.categoryId == 48
-                  ? buildShowMore(onTap: controller.toSpecial)
-                  : null,
             );
           }
           //大师
