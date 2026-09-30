@@ -9,10 +9,20 @@ class AiSearchCancelled implements Exception {
   const AiSearchCancelled();
 }
 
+/// 要求 AI 回传一个 JSON 物件的对话（测试与诊断可以换成别的实作）
+abstract interface class AiJsonChat {
+  Future<Map<String, dynamic>> completeJson({
+    required String system,
+    required String user,
+    String? reasoningEffort,
+    CancelToken? cancel,
+  });
+}
+
 /// OpenAI 相容 /chat/completions 的最小客户端
 ///
 /// 用独立的 Dio，不经过漫画接口的拦截器，登录 token 与请求内容都不会写进日志。
-class AiChatClient {
+class AiChatClient implements AiJsonChat {
   AiChatClient(this.config, {Dio? dio})
       : _dio = dio ??
             Dio(BaseOptions(
@@ -28,6 +38,7 @@ class AiChatClient {
   ///
   /// [reasoningEffort] 是推理模型的思考程度（none / low…），可以明显缩短等待；
   /// 端点不认得这个参数（400）时会自动拿掉再送一次。
+  @override
   Future<Map<String, dynamic>> completeJson({
     required String system,
     required String user,

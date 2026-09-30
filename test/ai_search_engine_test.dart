@@ -92,6 +92,13 @@ void main() {
       expect(plan.conditions, ['校园、爱情、冒险', '少女漫', '完结', '不要：惊悚']);
     });
 
+    test('keeps up to ten titles', () {
+      final plan = AiSearchEngine.parsePlan({
+        'titles': [for (var i = 0; i < 14; i++) '书$i'],
+      }, vocab);
+      expect(plan.titles.length, AiSearchEngine.maxTitles);
+    });
+
     test('ambiguous or too short names are ignored', () {
       const tags = [AiTag(1, '爱情'), AiTag(2, '纯爱')];
       expect(AiSearchEngine.matchTag('爱', tags), isNull);
@@ -106,7 +113,7 @@ void main() {
       expect(plan.copyWith(keywords: ['原句']).keywords, ['原句']);
     });
 
-    test('prompt lists the tag vocabulary and today', () {
+    test('prompt lists the tags and asks for many representative titles', () {
       final prompt = AiSearchEngine.planSystemPrompt(
         AiSearchKind.comic,
         vocab,
@@ -115,6 +122,11 @@ void main() {
       expect(prompt, contains('2026-09-30'));
       expect(prompt, contains('题材：校园、爱情、惊悚、冒险、奇幻、ゆり'));
       expect(prompt, contains('进度：连载、完结'));
+      expect(prompt, contains('不是主角的性别'));
+      expect(prompt, isNot(contains('"titles"')));
+      final titles = AiSearchEngine.titlesSystemPrompt(AiSearchKind.comic);
+      expect(titles, contains('8～10'));
+      expect(titles, contains('{"titles":["书名"]}'));
       final novel = AiSearchEngine.planSystemPrompt(
         AiSearchKind.novel,
         const AiTagVocabulary(themes: [AiTag(1, '魔法')]),
@@ -122,6 +134,30 @@ void main() {
       );
       expect(novel, contains('轻小说搜索助手'));
       expect(novel, isNot(contains('"zone"')));
+    });
+  });
+
+  group('title match', () {
+    test('same title or alias is exact', () {
+      expect(AiSearchEngine.titleMatch('葬送的芙莉莲', '葬送的芙莉蓮'), 2);
+      expect(AiSearchEngine.titleMatch('为美好的世界献上祝福', '为美好的世界献上祝福！'), 2);
+      expect(
+        AiSearchEngine.titleMatch('不过是蜘蛛什么的', '转生成蜘蛛又怎样',
+            aliases: ['不过是蜘蛛什么的']),
+        2,
+      );
+    });
+
+    test('a few extra characters is close', () {
+      expect(AiSearchEngine.titleMatch('咒术回战', '咒术回战 0'), 1);
+      expect(AiSearchEngine.titleMatch('关于我转生变成史莱姆这档事 第二部', '关于我转生变成史莱姆这档事'), 1);
+    });
+
+    test('art books, spin-offs and other works do not count', () {
+      expect(AiSearchEngine.titleMatch('葬送的芙莉莲', '葬送的芙莉莲 作品集 ~享受各种旅行的魔法~'), 0);
+      expect(AiSearchEngine.titleMatch('迷宫饭', '迷宫饭 公式导览'), 0);
+      expect(AiSearchEngine.titleMatch('迷宫饭', '妖精拼盘'), 0);
+      expect(AiSearchEngine.titleMatch('', '迷宫饭'), 0);
     });
   });
 
@@ -165,15 +201,34 @@ void main() {
       expect(ranked.first.tags, ['奇幻']);
     });
 
-    test('keep at most the candidate limit', () {
+    test('keyword and theme lists interleave, judged works are skipped', () {
+      const plan = AiSearchPlan(themes: [AiTag(5, '奇幻')]);
       final hits = [
-        for (var i = 1; i <= 30; i++)
-          AiCandidateHit(work(i, []), AiHitSource.filter, i),
+        for (var i = 0; i < 5; i++)
+          AiCandidateHit(work(100 + i, []), AiHitSource.keyword, i),
+        for (var i = 0; i < 5; i++)
+          AiCandidateHit(work(200 + i, ['奇幻']), AiHitSource.filter, i),
       ];
-      expect(
-        AiSearchEngine.rankCandidates(const AiSearchPlan(), hits).length,
-        AiSearchEngine.maxCandidates,
+      final ranked = AiSearchEngine.rankCandidates(plan, hits);
+      expect(ranked.take(4).map((e) => e.id), [100, 200, 101, 201]);
+      final rest = AiSearchEngine.rankCandidates(
+        plan,
+        hits,
+        exclude: {200, 100},
+        limit: 3,
       );
+      expect(rest.map((e) => e.id), [101, 201, 102]);
+    });
+
+    test('batches interleave so each gets strong and weak candidates', () {
+      final batches =
+          AiSearchEngine.splitBatches([for (var i = 0; i < 7; i++) i], 3);
+      expect(batches, [
+        [0, 3, 6],
+        [1, 4],
+        [2, 5],
+      ]);
+      expect(AiSearchEngine.splitBatches(<int>[], 3), isEmpty);
     });
   });
 
@@ -186,6 +241,7 @@ void main() {
         tags: const ['校园'],
         status: '已完结',
         description: '<p>第一行\n第二行</p>',
+        hot: 64457,
       ),
       AiWork(id: 12, title: '丙', description: '很长' * 100),
       AiWork(id: 13, title: '丁'),
@@ -196,18 +252,20 @@ void main() {
         '想看校园',
         const AiSearchPlan(summary: '校园'),
         candidates,
+        named: {13},
       );
-      expect(prompt, contains('1|甲/乙|作者A|校园|已完结|第一行 第二行'));
+      expect(prompt, contains('1|甲/乙|作者A|校园|已完结|6.4万|第一行 第二行'));
+      expect(prompt, contains('3|★丁|'));
       final second =
           prompt.split('\n').where((line) => line.startsWith('2|')).single;
-      expect(second, startsWith('2|丙||||'));
-      expect(second.length, lessThan(160));
+      expect(second, startsWith('2|丙|||||'));
+      expect(second.length, lessThan(170));
     });
 
-    test('map numbers back and skip invalid entries', () {
+    test('map numbers back, read fit and skip invalid entries', () {
       final items = AiSearchEngine.parseRerank({
         'results': [
-          {'n': 3, 'reason': '理由三'},
+          {'n': 3, 'fit': 1, 'reason': '理由三'},
           {'n': '1', 'reason': '理由一'},
           {'n': 3, 'reason': '重复'},
           {'n': 9, 'reason': '超出'},
@@ -217,11 +275,36 @@ void main() {
       }, candidates);
       expect(items.map((e) => e.work.id), [13, 11]);
       expect(items.first.reason, '理由三');
+      expect(items.first.likely, isTrue);
+      expect(items.last.fit, 2);
     });
 
     test('missing results means nothing matched', () {
       expect(AiSearchEngine.parseRerank({'foo': 1}, candidates), isEmpty);
     });
+
+    test('batches merge by fit, then by position across batches', () {
+      AiSearchResultItem item(int id, int fit) =>
+          AiSearchResultItem(work: work(id, []), reason: '', fit: fit);
+      final merged = AiSearchEngine.mergeBatches([
+        [item(1, 2), item(2, 1), item(3, 2)],
+        [item(4, 2), item(5, 1), item(1, 2)],
+      ]);
+      expect(merged.map((e) => e.work.id), [1, 4, 3, 2, 5]);
+      final preferred = AiSearchEngine.mergeBatches([
+        [item(1, 2), item(2, 1), item(3, 2)],
+        [item(4, 2), item(5, 1)],
+      ], preferred: {3, 5});
+      expect(preferred.map((e) => e.work.id), [3, 1, 4, 5, 2]);
+    });
+  });
+
+  test('popularity is written short', () {
+    expect(AiSearchEngine.formatHot(0), '');
+    expect(AiSearchEngine.formatHot(9876), '9876');
+    expect(AiSearchEngine.formatHot(64457), '6.4万');
+    expect(AiSearchEngine.formatHot(120000), '12万');
+    expect(AiSearchEngine.formatHot(250000000), '2.5亿');
   });
 
   test('daily quota counts per day and resets the next day', () {

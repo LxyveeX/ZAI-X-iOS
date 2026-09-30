@@ -66,7 +66,7 @@ class AiSearchPlan {
   /// AI 认为符合描述的具体作品
   final List<String> titles;
 
-  /// 书名或作者名里可能出现的词
+  /// 拿去搜书名的词
   final List<String> keywords;
 
   /// 想看新作或最近更新
@@ -107,16 +107,22 @@ class AiWork {
     required this.title,
     this.authors = '',
     List<String> tags = const [],
+    List<String> aliases = const [],
     this.status = '',
     this.cover = '',
     this.description = '',
     this.lastChapter = '',
-  }) : tags = List.unmodifiable(tags);
+    this.hot = 0,
+  })  : tags = List.unmodifiable(tags),
+        aliases = List.unmodifiable(aliases);
 
   final int id;
   final String title;
   final String authors;
   final List<String> tags;
+
+  /// 别名（比对 AI 点名的书名用）
+  final List<String> aliases;
   final String status;
   final String cover;
   final String description;
@@ -124,18 +130,23 @@ class AiWork {
   /// 最新章节名称
   final String lastChapter;
 
+  /// 人气（热度或点击），0 表示不知道
+  final int hot;
+
   /// 合并资料：[other] 有值的栏位优先（通常是详情接口的资料）
   AiWork mergedWith(AiWork other) => AiWork(
         id: id,
         title: other.title.isNotEmpty ? other.title : title,
         authors: other.authors.isNotEmpty ? other.authors : authors,
         tags: other.tags.isNotEmpty ? other.tags : tags,
+        aliases: other.aliases.isNotEmpty ? other.aliases : aliases,
         status: other.status.isNotEmpty ? other.status : status,
         cover: other.cover.isNotEmpty ? other.cover : cover,
         description:
             other.description.isNotEmpty ? other.description : description,
         lastChapter:
             other.lastChapter.isNotEmpty ? other.lastChapter : lastChapter,
+        hot: other.hot > 0 ? other.hot : hot,
       );
 
   /// 把「冒险/奇幻」这种字串拆成标签
@@ -157,44 +168,47 @@ class AiWork {
             .toList()
         : const <String>[];
     final status = names(data['status']);
+    final hot = data['hot_num'];
     return AiWork(
       id: id,
       title: '${data['title'] ?? ''}',
       authors: names(data['authors']).join('/'),
       tags: names(data['types']),
+      aliases: splitTags('${data['aliasName'] ?? ''}'),
       status: status.isEmpty ? '' : status.first,
       cover: '${data['cover'] ?? ''}',
       description: '${data['description'] ?? ''}',
       lastChapter: '${data['last_update_chapter_name'] ?? ''}',
+      hot: hot is num ? hot.toInt() : int.tryParse('${hot ?? ''}') ?? 0,
     );
   }
 }
 
+/// 本地漫画索引的一笔结果
+class AiIndexHit {
+  const AiIndexHit(this.work, this.tier);
+
+  final AiWork work;
+
+  /// 比对等级：0 标题相同、1 别名相同、2 标题开头相同、3 标题包含、4 别名包含、5 作者
+  final int tier;
+}
+
 /// 一笔 AI 搜索结果
 class AiSearchResultItem {
-  const AiSearchResultItem({required this.work, required this.reason});
+  const AiSearchResultItem({
+    required this.work,
+    required this.reason,
+    this.fit = 2,
+  });
 
   final AiWork work;
 
   /// 推荐理由；AI 挑选失败时为空
   final String reason;
-}
 
-/// 一次 AI 搜索的结果
-class AiSearchOutcome {
-  const AiSearchOutcome({
-    required this.plan,
-    required this.items,
-    this.reranked = true,
-    this.candidateCount = 0,
-  });
+  /// 2：符合需求；1：大致符合，或简介不足以确定
+  final int fit;
 
-  final AiSearchPlan plan;
-  final List<AiSearchResultItem> items;
-
-  /// false：AI 挑选失败，改列依条件排序的候选
-  final bool reranked;
-
-  /// 送去挑选的候选数量
-  final int candidateCount;
+  bool get likely => fit < 2;
 }

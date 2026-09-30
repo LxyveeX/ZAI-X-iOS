@@ -370,6 +370,13 @@ class ComicRequest {
   /// - [keyword] 关键字
   Future<List<SearchComicItem>> search(
       {required String keyword, int page = 1}) async {
+    final list = await searchModels(keyword: keyword, page: page);
+    return list.map((e) => SearchComicItem.fromApi(e)).toList();
+  }
+
+  /// 漫画搜索的原始资料（含别名与人气）
+  Future<List<ComicSearchModel>> searchModels(
+      {required String keyword, int page = 1}) async {
     var list = <ComicSearchModel>[];
     var result = await HttpClient.instance.getJson(
       '/search/index',
@@ -383,7 +390,7 @@ class ComicRequest {
     for (var item in result["list"]) {
       list.add(ComicSearchModel.fromJson(item));
     }
-    return list.map((e) => SearchComicItem.fromApi(e)).toList();
+    return list;
   }
 
   /// 漫画搜索热词

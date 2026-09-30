@@ -112,7 +112,7 @@ class AiSearchResultView extends StatelessWidget {
           _buildHeader(context, items.length),
           if (items.isEmpty)
             _buildEmpty(context)
-          else ...[
+          else
             for (var i = 0; i < items.length; i++) ...[
               if (i > 0)
                 Divider(
@@ -123,18 +123,66 @@ class AiSearchResultView extends StatelessWidget {
                 ),
               _buildItem(context, items[i]),
             ],
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: Text(
-                "结果由 AI 依标题、题材与简介挑选，仅供参考".i18n,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ),
-          ],
+          _buildFooter(context, items.isNotEmpty),
         ],
       );
     });
+  }
+
+  /// 列表底部：找更多作品、进度与说明
+  Widget _buildFooter(BuildContext context, bool hasItems) {
+    const grey = TextStyle(color: Colors.grey, fontSize: 13);
+    final children = <Widget>[];
+    if (session.loadingMore.value) {
+      children.add(Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2, color: kAiAccent),
+          ),
+          AppStyle.hGap8,
+          Flexible(child: Text(session.moreStage.value.i18n, style: grey)),
+        ],
+      ));
+    } else {
+      final failed = session.moreError.value.isNotEmpty;
+      if (failed || session.moreEmpty.value) {
+        children.add(Text(
+          failed
+              ? session.moreError.value.i18n
+              : "这一批候选里没有符合的作品".i18n,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: failed ? Colors.orange : Colors.grey,
+            fontSize: 13,
+          ),
+        ));
+        children.add(AppStyle.vGap8);
+      }
+      if (session.hasMore.value) {
+        children.add(OutlinedButton.icon(
+          onPressed: session.loadMore,
+          icon: const Icon(Icons.auto_awesome, size: 16, color: kAiAccent),
+          label: Text((failed ? "重试" : "找更多作品").i18n),
+        ));
+      } else if (hasItems) {
+        children.add(Text("候选作品都看过了".i18n, style: grey));
+      }
+    }
+    if (hasItems) {
+      children.add(AppStyle.vGap12);
+      children.add(Text(
+        "结果由 AI 依标题、题材与简介挑选，仅供参考".i18n,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.grey, fontSize: 12),
+      ));
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Column(children: children),
+    );
   }
 
   Widget _buildLoading(BuildContext context) {
@@ -213,6 +261,7 @@ class AiSearchResultView extends StatelessWidget {
     final summary = session.summary.value;
     final conditions = session.conditions.toList();
     final reranked = session.reranked.value;
+    final seen = session.seen.value;
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 12, 12, 4),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
@@ -263,11 +312,11 @@ class AiSearchResultView extends StatelessWidget {
               ],
             ),
           ],
-          if (count > 0) ...[
+          if (count > 0 || seen > 0) ...[
             AppStyle.vGap8,
             Text(
               reranked
-                  ? "依标题、题材与简介挑出 $count 部".i18n
+                  ? "AI 读了 $seen 部作品的简介，挑出 $count 部".i18n
                   : "AI 没能完成挑选，先依条件列出候选".i18n,
               style: TextStyle(
                 fontSize: 12,
@@ -373,24 +422,36 @@ class AiSearchResultView extends StatelessWidget {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: kAiAccent.withValues(alpha: .08),
+                        color: item.likely
+                            ? Colors.grey.withValues(alpha: .1)
+                            : kAiAccent.withValues(alpha: .08),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 3),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 3),
                             child: Icon(
                               Icons.auto_awesome,
                               size: 13,
-                              color: kAiAccent,
+                              color: item.likely ? Colors.grey : kAiAccent,
                             ),
                           ),
                           AppStyle.hGap4,
                           Expanded(
-                            child: Text(
-                              item.reason.i18n,
+                            child: Text.rich(
+                              TextSpan(children: [
+                                if (item.likely)
+                                  TextSpan(
+                                    text: "可能符合 · ".i18n,
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                TextSpan(text: item.reason.i18n),
+                              ]),
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(fontSize: 13, height: 1.35),
