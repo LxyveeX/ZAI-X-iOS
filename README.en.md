@@ -6,12 +6,15 @@
 
 Read manga, light novels and news from Zaimanhua, with AI-assisted search, access to hidden titles, dual-page reading on foldables and tablets, and automatic daily check-in. The app interface is in Chinese (Simplified or Traditional).
 
-<p>
-  <img src="docs/images/ai-search.jpg" alt="AI search: for “titles like Frieren: Beyond Journey's End”, the AI read 45 descriptions and picked 11 titles, each with a reason" width="260">
-  <img src="docs/images/comic-detail.jpg" alt="Detail page of the hidden title Made in Abyss, showing its description and full list of 79 chapters" width="260">
-</p>
+| Home | Library: recent reads and unread updates | Me: checked in on launch |
+| :---: | :---: | :---: |
+| <img src="docs/images/home.jpg" alt="Manga home page with the featured carousel, the user's library row and recommendations" width="240"> | <img src="docs/images/bookshelf.jpg" alt="Library showing recent reads with the last chapter and page, and subscriptions marked with unread updates" width="240"> | <img src="docs/images/profile.jpg" alt="Me page showing today's daily check-in as done; the avatar and nickname are pixelated" width="240"> |
 
-*Left: AI search read 45 descriptions and picked 11 titles. Right: hidden titles open with their details and full chapter list. The screenshots show the Android app in Simplified Chinese.*
+| AI search: picks after reading descriptions | Hidden titles: full chapter list |
+| :---: | :---: |
+| <img src="docs/images/ai-search.jpg" alt="AI search: for “titles like Frieren: Beyond Journey's End”, the AI read 45 descriptions and picked 11 titles, each with a reason" width="240"> | <img src="docs/images/comic-detail.jpg" alt="Detail page of the hidden title Made in Abyss, showing its description and full list of 79 chapters" width="240"> |
+
+*The screenshots show the Android app in Simplified Chinese. The avatar and nickname on the Me page are pixelated.*
 
 ## What it does
 
@@ -19,7 +22,8 @@ Read manga, light novels and news from Zaimanhua, with AI-assisted search, acces
 - **Hidden and delisted titles**: titles missing from the official search come from a bundled local index that updates daily. Hidden titles open with their details, full chapter list and comments.
 - **Reader**: dual-page spreads on foldables and tablets, next-chapter preloading, adjustable tap zones, keyboard page turns on Windows, per-title reading settings and an E-ink mode.
 - **Library**: sort by update time, filter titles with unread updates, get new-chapter notifications on Android, and sync reading progress with your Zaimanhua account.
-- **Account**: automatic daily check-in, task reward claiming and profile editing.
+- **Check-in on launch**: once you are signed in, opening the app checks in for the day if you have not already, claims finished task rewards and shows the result in a notification. If the app stays in the background, reopen it to check in. The Me page shows today's status and lets you check in manually.
+- **Account**: task center and profile editing.
 - **Updates**: in-app updates are verified by SHA-256. On Windows, v2.2.0 and later replace the app folder automatically and roll back if anything fails.
 
 ## Requirements
