@@ -22,7 +22,7 @@ class AiSearchService {
             ? null
             : AiSearchPipeline(
                 chat: AiChatClient(config),
-                backend: _AppSearchBackend(),
+                backend: AppAiSearchBackend(),
                 onError: Log.logPrint,
               );
 
@@ -142,8 +142,8 @@ class AiSearchService {
   }
 }
 
-/// 官方接口与本地漫画索引
-class _AppSearchBackend implements AiSearchBackend {
+/// 官方接口与本地漫画索引（AI 搜索与 AI 答题共用）
+class AppAiSearchBackend implements AiSearchBackend {
   final ComicRequest _comic = ComicRequest();
   final NovelRequest _novel = NovelRequest();
   final Map<String, AiWork> _details = {};
@@ -291,7 +291,9 @@ class _AppSearchBackend implements AiSearchBackend {
         hot: detail.hotHits,
       );
     }
-    if (_details.length >= _detailCacheSize) _details.remove(_details.keys.first);
+    if (_details.length >= _detailCacheSize) {
+      _details.remove(_details.keys.first);
+    }
     _details[key] = info;
     return info;
   }

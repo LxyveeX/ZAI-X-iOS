@@ -159,6 +159,12 @@ class LocalStorageService extends GetxService {
   /// AI 搜索今天已用次数，格式「yyyy-MM-dd|次数」
   static const String kAiSearchQuota = "AiSearchQuota";
 
+  /// AI 答题（题库认证）今天已用次数，格式「yyyy-MM-dd|次数」
+  static const String kAiExamQuota = "AiExamQuota";
+
+  /// AI 答题完先让使用者检查再交卷
+  static const String kAiExamReviewFirst = "AiExamReviewFirst";
+
   /// 漫画 AI 搜索历史
   static const String kComicAiSearchHistory = "ComicAiSearchHistory";
 

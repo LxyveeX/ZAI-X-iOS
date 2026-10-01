@@ -92,6 +92,12 @@ class UserHomeController extends GetxController {
     AppNavigator.toTaskCenter();
   }
 
+  /// 用户等级（含题库认证的 AI 一键答题）
+  Future<void> toUserLevel() async {
+    if (!await UserService.instance.login()) return;
+    AppNavigator.toUserLevel();
+  }
+
   void toProfileEdit() {
     AppNavigator.toProfileEdit();
   }

@@ -60,6 +60,17 @@ class UserHomePage extends GetView<UserHomeController> {
                       title: '任务中心'.i18n,
                       subtitle: '达成后自动领取奖励'.i18n,
                       onTap: controller.toTaskCenter),
+                  Obx(() {
+                    final level =
+                        UserService.instance.userProfile.value?.userLevel;
+                    return _tile(context,
+                        icon: Remix.medal_line,
+                        title: '用户等级'.i18n,
+                        subtitle: level == null
+                            ? '晋升条件与题库认证'.i18n
+                            : 'Lv.$level · 晋升条件与题库认证'.i18n,
+                        onTap: controller.toUserLevel);
+                  }),
                   _tile(context,
                       icon: Remix.user_settings_line,
                       title: '个人资料'.i18n,
@@ -147,17 +158,43 @@ class UserHomePage extends GetView<UserHomeController> {
                   if (loggedIn &&
                       (profile?.userLevel != null || user.isVip)) ...[
                     const SizedBox(height: 6),
-                    Wrap(spacing: 8, children: [
-                      if (profile?.userLevel != null)
-                        Text('Lv.${profile!.userLevel}',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: theme.colorScheme.primary)),
-                      if (user.isVip)
-                        const Text('VIP',
-                            style: TextStyle(
-                                fontSize: 12, color: Color(0xffad782c))),
-                    ]),
+                    Wrap(
+                        spacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          if (profile?.userLevel != null)
+                            Material(
+                              color: theme.colorScheme.primary
+                                  .withValues(alpha: .12),
+                              borderRadius: BorderRadius.circular(6),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(6),
+                                onTap: controller.toUserLevel,
+                                child: Padding(
+                                  padding:
+                                      const EdgeInsets.fromLTRB(7, 2, 3, 2),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('Lv.${profile!.userLevel}',
+                                          style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color:
+                                                  theme.colorScheme.primary)),
+                                      Icon(Icons.chevron_right,
+                                          size: 14,
+                                          color: theme.colorScheme.primary),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (user.isVip)
+                            const Text('VIP',
+                                style: TextStyle(
+                                    fontSize: 12, color: Color(0xffad782c))),
+                        ]),
                   ],
                 ],
               )),

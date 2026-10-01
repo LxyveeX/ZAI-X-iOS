@@ -12,6 +12,8 @@ import 'package:zai_x/models/user/subscribe_news_model.dart';
 import 'package:zai_x/models/user/subscribe_novel_model.dart';
 import 'package:zai_x/models/user/task_model.dart';
 import 'package:zai_x/models/user/user_center_model.dart';
+import 'package:zai_x/models/user/user_exam_model.dart';
+import 'package:zai_x/models/user/user_level_model.dart';
 import 'package:zai_x/models/user/user_profile_model.dart';
 import 'package:zai_x/requests/common/api.dart';
 import 'package:zai_x/requests/common/http_client.dart';
@@ -318,6 +320,77 @@ class UserRequest {
     }
     return "";
   }
+
+  /// 用户等级、特权与晋升条件（官方等级页 m.zaimanhua.com/pages/signIn/level）
+  Future<UserLevelInfo> userLevelInfo() async {
+    var result = await HttpClient.instance.getJson(
+      "/u_center/user_level/info",
+      baseUrl: Api.BASE_URL_USER,
+      needLogin: true,
+      checkCode: true,
+    );
+    return UserLevelInfo.fromJson(_asMap(result));
+  }
+
+  /// 题库认证：现在能不能开始作答
+  Future<UserExamPrepare> examPrepare() async {
+    var result = await HttpClient.instance.getJson(
+      "/auth/prepare",
+      baseUrl: Api.BASE_URL_USER,
+      needLogin: true,
+      checkCode: true,
+    );
+    return UserExamPrepare.fromJson(_asMap(result));
+  }
+
+  /// 题库认证：出题
+  ///
+  /// 每次都是新的一份（随机 50 题），拿到就开始计时，限时内要交卷；
+  /// 没交卷的考卷只会作废，不会记成绩。
+  Future<UserExamPaper> examPaper() async {
+    var result = await HttpClient.instance.getJson(
+      "/auth/question_list",
+      baseUrl: Api.BASE_URL_USER,
+      needLogin: true,
+      checkCode: true,
+    );
+    return UserExamPaper.fromJson(_asMap(result));
+  }
+
+  /// 题库认证：交卷，回传这次的分数与是否通过
+  ///
+  /// [answer] 用 [UserExamAnswer.encode] 产生，格式与官方 H5 相同。
+  Future<UserExamScore> examSubmit({
+    required String sessionId,
+    required String answer,
+  }) async {
+    var result = await HttpClient.instance.postJson(
+      "/auth/post",
+      baseUrl: Api.BASE_URL_USER,
+      needLogin: true,
+      checkCode: true,
+      data: {
+        "answer": answer,
+        "session_id": sessionId,
+        "timestamp": DateTime.now().millisecondsSinceEpoch,
+      },
+    );
+    return UserExamScore.fromJson(_asMap(result));
+  }
+
+  /// 题库认证：最近一次的成绩（没考过时 id 为 0）
+  Future<UserExamScore> examReview() async {
+    var result = await HttpClient.instance.getJson(
+      "/auth/review",
+      baseUrl: Api.BASE_URL_USER,
+      needLogin: true,
+      checkCode: true,
+    );
+    return UserExamScore.fromJson(_asMap(result));
+  }
+
+  static Map<String, dynamic> _asMap(dynamic value) =>
+      value is Map ? Map<String, dynamic>.from(value) : <String, dynamic>{};
 
   /// 我的漫画订阅
   /// - [page] 页数从0开始

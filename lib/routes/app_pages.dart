@@ -30,6 +30,9 @@ import 'package:zai_x/modules/novel/select_chapter/novel_select_chapter_page.dar
 import 'package:zai_x/modules/user/center/user_center_page.dart';
 import 'package:zai_x/modules/user/comment/user_comment_page.dart';
 import 'package:zai_x/modules/user/history/user_history_page.dart';
+import 'package:zai_x/modules/user/level/user_exam_controller.dart';
+import 'package:zai_x/modules/user/level/user_exam_page.dart';
+import 'package:zai_x/modules/user/level/user_level_page.dart';
 import 'package:zai_x/modules/user/local_favorite/local_favorite_page.dart';
 import 'package:zai_x/modules/user/local_history/local_history_page.dart';
 import 'package:zai_x/modules/user/settings/settings_page.dart';
@@ -89,6 +92,13 @@ class AppPages {
         ),
       ),
     ),
+    GetPage(
+      name: RoutePath.kUserExam,
+      page: () => const UserExamPage(),
+      binding: BindingsBuilder.put(
+        () => UserExamController(reviewFirst: Get.arguments == true),
+      ),
+    ),
   ];
 
   /// 定义子路由
@@ -146,8 +156,11 @@ class AppPages {
         return GetPageRoute(
           settings: settings,
           page: () => CategoryDetailPage(
-            categoryArg is Map ? (categoryArg["id"] as int) : categoryArg as int,
-            tagName: categoryArg is Map ? categoryArg["tagName"] as String? : null,
+            categoryArg is Map
+                ? (categoryArg["id"] as int)
+                : categoryArg as int,
+            tagName:
+                categoryArg is Map ? categoryArg["tagName"] as String? : null,
           ),
         );
       case RoutePath.kSpecialDetail:
@@ -236,6 +249,11 @@ class AppPages {
         return GetPageRoute(
           settings: settings,
           page: () => TaskCenterPage(),
+        );
+      case RoutePath.kUserLevel:
+        return GetPageRoute(
+          settings: settings,
+          page: () => UserLevelPage(),
         );
       case RoutePath.kProfileEdit:
         return GetPageRoute(

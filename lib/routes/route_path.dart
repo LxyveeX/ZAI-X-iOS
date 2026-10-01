@@ -64,6 +64,12 @@ class RoutePath {
   /// 任务中心
   static const kTaskCenter = "/user/task";
 
+  /// 用户等级
+  static const kUserLevel = "/user/level";
+
+  /// AI 一键答题（题库认证，主路由）
+  static const kUserExam = "/user/exam";
+
   /// 个人资料编辑
   static const kProfileEdit = "/user/profile";
 

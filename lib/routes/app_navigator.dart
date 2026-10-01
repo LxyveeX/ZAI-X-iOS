@@ -217,6 +217,22 @@ class AppNavigator {
     toContentPage(RoutePath.kTaskCenter);
   }
 
+  /// 打开用户等级
+  static void toUserLevel() {
+    toContentPage(RoutePath.kUserLevel);
+  }
+
+  /// 打开 AI 一键答题
+  ///
+  /// 走主路由，作答中按返回会先确认；关闭后确保内容区仍停在等级页。
+  static Future toUserExam({required bool reviewFirst}) async {
+    await Get.toNamed(RoutePath.kUserExam, arguments: reviewFirst);
+    markMainRoutePopped();
+    if (currentContentRouteName != RoutePath.kUserLevel || !hasContentPage) {
+      toContentPage(RoutePath.kUserLevel);
+    }
+  }
+
   /// 打开个人资料编辑
   static void toProfileEdit() {
     toContentPage(RoutePath.kProfileEdit);
