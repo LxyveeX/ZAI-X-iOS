@@ -23,7 +23,7 @@ tools/comic_index/build_comic_index.dart ── 逐一讀取詳情（帶 _v）
                 └─ App 下載到本機：依序試 gh-proxy.com 加速代理 → raw.githubusercontent.com → jsDelivr
 ```
 
-- 每天台北時間 03:40 增量更新：只抓新 ID，加上輪替的 1/14 舊 ID（每本兩週重新確認一次，每天約 6,700 個請求、GitHub 上約 11 分鐘），內容沒變就不發布。手動執行 workflow 可選全量重抓。
+- 每天北京時間 03:40 增量更新：只抓新 ID，加上輪替的 1/14 舊 ID（每本兩週重新確認一次，每天約 6,700 個請求、GitHub 上約 11 分鐘），內容沒變就不發布。手動執行 workflow 可選全量重抓。
 - 正式打包（`build_release.yml`）建置前會換成 comic-index 分支的最新清單並核對筆數，取不到就沿用倉庫內快照。
 - App 在搜尋漫畫時自動檢查更新：真的連上（已是最新或更新成功）後 24 小時內不再檢查；所有來源都連不上時，2 小時後再試。手機只在 Wi-Fi／有線網路時自動檢查（約 2.6 MB）。行動網路可到「我的 → 更多設定 → 漫畫 → 本地漫畫索引 → 檢查更新」手動更新，手動不受這些限制。
 - 下載來源依序為 gh-proxy.com（第三方公益加速代理，在原網址前加上 `https://gh-proxy.com/`）、raw.githubusercontent.com、jsDelivr。單一來源讀 meta 超過 15 秒、下載超過 2 分鐘，或檔案大小、版本、筆數不符，就換下一個來源；全部通過才替換本機清單。
