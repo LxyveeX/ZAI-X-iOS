@@ -23,7 +23,7 @@ Read manga, light novels and news from Zaimanhua, with AI-assisted search, acces
 - **Reader**: dual-page spreads on foldables and tablets, next-chapter preloading, adjustable tap zones, keyboard page turns on Windows, per-title reading settings and an E-ink mode.
 - **Library**: sort by update time, filter titles with unread updates, get new-chapter notifications on Android, and sync reading progress with your Zaimanhua account.
 - **Check-in on launch**: once you are signed in, opening the app checks in for the day if you have not already, claims finished task rewards and shows the result in a notification. If the app stays in the background, reopen it to check in. The Me page shows today's status and lets you check in manually.
-- **Account**: task center and profile editing.
+- **Account**: task center, profile editing and a user level page. AI can take the Lv4→Lv5 quiz for you: it looks up the titles the questions mention, answers all 50 questions in a minute or two, and can wait for your review before submitting. Passing is not guaranteed; each device gets 5 attempts per day.
 - **Updates**: in-app updates are verified by SHA-256. On Windows, v2.2.0 and later replace the app folder automatically and roll back if anything fails.
 
 ## Requirements
@@ -43,9 +43,9 @@ These links always point to the [latest release](https://github.com/funkeyyou/za
 
 Open **我的 → 检查更新** (Me → Check for updates) in the app. On Android, the new version installs over the old one and keeps your data. On Windows, v2.2.0 and later update in place; older versions need one manual update by extracting the new ZIP over the old folder. Windows keeps your library, history, settings and downloads in AppData, so replacing the app folder does not lose them.
 
-## AI search and privacy
+## AI features and privacy
 
-AI search sends only your description and the candidates' public information (title, author, genres, status, popularity and description), never your account or reading history. Release builds include the AI service: each device gets 50 AI searches per day, “Find more” counts as one, and repeating the same description within 30 minutes is not counted again.
+AI search sends only your description and the candidates' public information (title, author, genres, status, popularity and description). AI quiz answering sends only the questions, their options and the site's public information about the titles they mention. Neither sends your account or reading history. Release builds include the AI service: each device gets 50 AI searches per day, “Find more” counts as one, and repeating the same description within 30 minutes is not counted again.
 
 ## Build from source
 
