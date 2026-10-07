@@ -1,9 +1,3 @@
-/* 
-  InfoPlist.strings
-  Runner
-
-  Created by xiaoyaocz on 2023/3/15.
-  
-*/
-"CFBundleDisplayName" = "ZAI-X";
-"NSPhotoLibraryUsageDescription" = "保存图片至相册";
+"CFBundleDisplayName" = "再漫画X";
+"NSPhotoLibraryUsageDescription" = "将您选择的漫画图片添加到相册。";
+"NSPhotoLibraryAddUsageDescription" = "将您选择的漫画图片添加到相册。";

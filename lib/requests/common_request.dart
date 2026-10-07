@@ -4,19 +4,26 @@ import 'package:dio/dio.dart';
 import 'package:zai_x/models/version_model.dart';
 import 'package:zai_x/requests/common/github_proxy.dart';
 
+class NoIosRelease implements Exception {
+  const NoIosRelease();
+}
+
 /// 通用的请求
 class CommonRequest {
   CommonRequest({Dio? dio})
       : _dio = dio ??
-            Dio(BaseOptions(
-              connectTimeout: const Duration(seconds: 8),
-              receiveTimeout: const Duration(seconds: 15),
-            ));
+            Dio(
+              BaseOptions(
+                connectTimeout: const Duration(seconds: 8),
+                receiveTimeout: const Duration(seconds: 15),
+              ),
+            );
 
   final Dio _dio;
 
   /// 版本信息来源：本仓库的 GitHub Release
   static const String kRepo = "funkeyyou/zaimanhua";
+  static const String kIosRepo = String.fromEnvironment('ZAI_IOS_REPOSITORY');
 
   Future<VersionModel> checkUpdate() async {
     return await checkUpdateGithubRelease();
@@ -24,20 +31,20 @@ class CommonRequest {
 
   /// 检查更新：读取仓库最新的 Release
   Future<VersionModel> checkUpdateGithubRelease() async {
-    final sources =
-        githubSources("https://api.github.com/repos/$kRepo/releases/latest");
+    final repo = Platform.isIOS ? kIosRepo : kRepo;
+    if (repo.isEmpty) {
+      throw const NoIosRelease();
+    }
+    final url = "https://api.github.com/repos/$repo/releases/latest";
+    final sources = Platform.isIOS ? [url] : githubSources(url);
     for (var i = 0; i < sources.length; i++) {
       try {
         final result = await _dio.get(
           sources[i],
-          queryParameters: {
-            "ts": DateTime.now().millisecondsSinceEpoch,
-          },
+          queryParameters: {"ts": DateTime.now().millisecondsSinceEpoch},
           options: Options(
             responseType: ResponseType.json,
-            headers: const {
-              "Accept": "application/vnd.github+json",
-            },
+            headers: const {"Accept": "application/vnd.github+json"},
           ),
         );
         final data = result.data;
@@ -50,8 +57,14 @@ class CommonRequest {
           data,
           android: Platform.isAndroid,
           windows: Platform.isWindows,
+          ios: Platform.isIOS,
         );
-      } catch (_) {
+      } catch (error) {
+        if (Platform.isIOS &&
+            error is DioException &&
+            error.response?.statusCode == 404) {
+          throw const NoIosRelease();
+        }
         if (i == sources.length - 1) rethrow;
       }
     }
@@ -66,6 +79,7 @@ class CommonRequest {
     Map json, {
     required bool android,
     required bool windows,
+    bool ios = false,
   }) {
     var tag = (json["tag_name"] ?? "").toString();
     var version = tag.startsWith("v") ? tag.substring(1) : tag;
@@ -78,7 +92,8 @@ class CommonRequest {
       var url = (item["browser_download_url"] ?? "").toString();
       if (url.isEmpty) continue;
       if ((android && name.endsWith(".apk")) ||
-          (windows && name.endsWith(".zip"))) {
+          (windows && name.endsWith(".zip")) ||
+          (ios && name.endsWith(".ipa"))) {
         downloadUrl = url;
         var digest = (item["digest"] ?? "").toString();
         if (digest.startsWith("sha256:")) {

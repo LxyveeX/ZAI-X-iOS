@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:file_selector/file_selector.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:zai_x/app/system_share.dart';
 import 'package:zai_x/app/event_bus.dart';
 import 'package:zai_x/models/comic/detail_info.dart';
 import 'package:zai_x/models/db/comic_download_info.dart';
@@ -199,8 +199,10 @@ class ComicDownloadedDetailController extends GetxController {
     }
     var chapters = <ComicDownloadInfo>[];
     for (var item in selectItems) {
-      var download = ComicDownloadService.instance
-          .getDownloadInfo(info.comicId, item.chapterId);
+      var download = ComicDownloadService.instance.getDownloadInfo(
+        info.comicId,
+        item.chapterId,
+      );
       if (download != null) {
         chapters.add(download);
       }
@@ -234,8 +236,9 @@ class ComicDownloadedDetailController extends GetxController {
       }
       exitEditMode();
       if (mobile) {
-        await SharePlus.instance.share(
-          ShareParams(files: files.map((e) => XFile(e)).toList()),
+        await shareSystemContent(
+          context: Get.context!,
+          files: files.map((e) => XFile(e)).toList(),
         );
       } else {
         SmartDialog.showToast('已导出到：$outputDir'.i18n);

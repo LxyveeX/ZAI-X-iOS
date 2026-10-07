@@ -52,7 +52,9 @@ class AppUpdateService {
     }
     if (!supported) {
       await launchUrlString(
-        githubProxyUrl(version.downloadUrl),
+        Platform.isIOS
+            ? version.downloadUrl
+            : githubProxyUrl(version.downloadUrl),
         mode: LaunchMode.externalApplication,
       );
       return;
@@ -99,7 +101,9 @@ class AppUpdateService {
 
   /// Windows 能否直接覆盖安装
   static Future<bool> _canSelfUpdate(
-      WindowsSelfUpdate updater, VersionModel version) async {
+    WindowsSelfUpdate updater,
+    VersionModel version,
+  ) async {
     // 开发版的执行档在 build 资料夹里，不做覆盖
     if (!kReleaseMode) {
       return false;
@@ -122,7 +126,9 @@ class AppUpdateService {
 
   /// Windows：下载、校验、解压，交给更新脚本后结束 App
   static Future<void> _selfUpdate(
-      WindowsSelfUpdate updater, VersionModel version) async {
+    WindowsSelfUpdate updater,
+    VersionModel version,
+  ) async {
     _beginDownload();
     var launched = false;
     try {
@@ -182,8 +188,9 @@ class AppUpdateService {
       return;
     }
     try {
-      var outcome = await WindowsSelfUpdate.forCurrentApp()
-          .takeOutcome(currentVersion: Utils.packageInfo.version);
+      var outcome = await WindowsSelfUpdate.forCurrentApp().takeOutcome(
+        currentVersion: Utils.packageInfo.version,
+      );
       if (outcome == null) {
         return;
       }
@@ -275,7 +282,9 @@ class AppUpdateService {
   }
 
   static Future<void> _fallbackToBrowser(
-      VersionModel version, Object error) async {
+    VersionModel version,
+    Object error,
+  ) async {
     Log.logPrint(error);
     SmartDialog.showToast("下载失败，改用浏览器下载".i18n);
     await launchUrlString(
@@ -397,7 +406,7 @@ class UpdateProgressCard extends StatelessWidget {
               AppUpdateService.progress.value >= 0
                   ? "${(AppUpdateService.progress.value * 100).toStringAsFixed(0)}%"
                   : (AppUpdateService.cancellable.value ? "连接中..." : "请稍候...")
-                      .i18n,
+                        .i18n,
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),

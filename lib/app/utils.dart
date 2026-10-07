@@ -16,7 +16,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart' as p;
-import 'package:share_plus/share_plus.dart';
+import 'package:zai_x/app/system_share.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:zai_x/app/i18n.dart';
 import 'package:zai_x/services/app_update_service.dart';
@@ -84,12 +84,14 @@ class Utils {
     if (dt.year == dtNow.year &&
         dt.month == dtNow.month &&
         dt.day == dtNow.day) {
-      return "今天${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}".i18n;
+      return "今天${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}"
+          .i18n;
     }
     if (dt.year == dtNow.year &&
         dt.month == dtNow.month &&
         dt.day == dtNow.day - 1) {
-      return "昨天${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}".i18n;
+      return "昨天${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}"
+          .i18n;
     }
 
     if (dt.year == dtNow.year) {
@@ -102,11 +104,13 @@ class Utils {
   /// 检查相册权限
   static Future<bool> checkPhotoPermission() async {
     try {
-      var status = await Permission.photos.status;
+      final permission =
+          Platform.isIOS ? Permission.photosAddOnly : Permission.photos;
+      var status = await permission.status;
       if (status == PermissionStatus.granted) {
         return true;
       }
-      status = await Permission.photos.request();
+      status = await permission.request();
       if (status.isGranted) {
         return true;
       } else {
@@ -140,15 +144,17 @@ class Utils {
         saveImageDetktop(p.basename(url), data);
       } else {
         var cacheDir = await getTemporaryDirectory();
-        var file = File(p.join(cacheDir.path, p.basename(url)));
+        final fileName = p.basename(Uri.tryParse(url)?.path ?? url);
+        var file = File(p.join(cacheDir.path, fileName));
         await file.writeAsBytes(data);
         final result = await ImageGallerySaverPlus.saveFile(
           file.path,
-          name: p.basename(url),
-          isReturnPathOfIOS: true,
+          name: fileName,
+          // Returning a Photos asset path requires access to the whole library.
+          isReturnPathOfIOS: false,
         );
-        Log.d(result.toString());
-        SmartDialog.showToast("保存成功".i18n);
+        final saved = result is Map && result['isSuccess'] == true;
+        SmartDialog.showToast((saved ? "保存成功" : "保存失败").i18n);
       }
     } catch (e) {
       SmartDialog.showToast("保存失败".i18n);
@@ -157,8 +163,9 @@ class Utils {
 
   /// 保存图片-桌面平台
   static void saveImageDetktop(String fileName, Uint8List list) async {
-    final FileSaveLocation? location =
-        await getSaveLocation(suggestedName: fileName);
+    final FileSaveLocation? location = await getSaveLocation(
+      suggestedName: fileName,
+    );
     if (location == null) {
       return;
     }
@@ -176,9 +183,7 @@ class Utils {
           topRight: Radius.circular(12),
         ),
       ),
-      constraints: const BoxConstraints(
-        maxWidth: 500,
-      ),
+      constraints: const BoxConstraints(maxWidth: 500),
       useSafeArea: true,
       backgroundColor: Get.theme.cardColor,
       builder: (context) => Column(
@@ -214,11 +219,17 @@ class Utils {
           ListTile(
             leading: const Icon(Icons.share),
             title: Text("系统分享".i18n),
-            onTap: () {
+            onTap: () async {
+              final shareContext = Get.context!;
               Get.back();
-              SharePlus.instance.share(
-                ShareParams(text: content.isEmpty ? url : "$content\n$url"),
-              );
+              try {
+                await shareSystemContent(
+                  context: shareContext,
+                  text: content.isEmpty ? url : "$content\n$url",
+                );
+              } catch (e) {
+                SmartDialog.showToast("分享失败：$e".i18n);
+              }
             },
           ),
         ],
@@ -260,9 +271,7 @@ class Utils {
                   AppStyle.hGap12,
                   Expanded(
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                      ),
+                      style: ElevatedButton.styleFrom(elevation: 0),
                       onPressed: () {
                         Get.back();
                         AppUpdateService.download(versionInfo);
@@ -281,6 +290,10 @@ class Utils {
         }
       }
     } catch (e) {
+      if (e is NoIosRelease) {
+        if (showMsg) SmartDialog.showToast("暂无已发布的 iOS 更新".i18n);
+        return;
+      }
       Log.logPrint(e);
       if (showMsg) {
         SmartDialog.showToast("检查更新失败".i18n);

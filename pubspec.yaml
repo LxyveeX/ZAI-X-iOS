@@ -1,5 +1,5 @@
 name: zai_x
-version: 2.4.0+24000
+version: 2.4.1+24001
 publish_to: none
 description: "再漫画X · 再漫画第三方客户端"
 environment: 
@@ -80,6 +80,9 @@ dependency_overrides:
   path_provider_android: 2.3.1
 
 flutter:
+  # Keep the permission_handler CocoaPods permission macros deterministic.
+  config:
+    enable-swift-package-manager: false
   uses-material-design: true
   assets:
     - assets/lotties/
@@ -91,5 +94,4 @@ flutter:
     - family: SourceHanSansSC
       fonts:
         - asset: assets/fonts/SourceHanSansSC-Medium.otf
-
 

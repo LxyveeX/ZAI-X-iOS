@@ -12,6 +12,7 @@ class SubscribeNotifyScheduler {
   SubscribeNotifyScheduler._();
 
   static bool get platformSupported => Platform.isAndroid || Platform.isIOS;
+  static bool get intervalSupported => Platform.isAndroid;
 
   /// 依目前設定與登入狀態，同步狀態檔並註冊／取消背景任務
   static Future<void> apply() async {
@@ -31,13 +32,14 @@ class SubscribeNotifyScheduler {
           SubscribeNotifyService.taskName,
           SubscribeNotifyService.taskName,
           frequency: Duration(hours: settings.subscribeNotifyHours.value),
-          initialDelay: const Duration(minutes: 15),
+          initialDelay: Platform.isIOS
+              ? const Duration(hours: 6)
+              : const Duration(minutes: 15),
           constraints: Constraints(networkType: NetworkType.connected),
           existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
         );
       } else {
-        await Workmanager()
-            .cancelByUniqueName(SubscribeNotifyService.taskName);
+        await Workmanager().cancelByUniqueName(SubscribeNotifyService.taskName);
       }
     } catch (e) {
       Log.logPrint(e);
@@ -72,4 +74,3 @@ class SubscribeNotifyScheduler {
     return true;
   }
 }
-

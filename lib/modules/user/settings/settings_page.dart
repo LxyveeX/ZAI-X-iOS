@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -74,10 +75,7 @@ class SettingsPage extends StatelessWidget {
           ListTile(
             title: Text("清除小说缓存".i18n),
             subtitle: Text(controller.novelCacheSize.value),
-            trailing: OutlinedButton(
-              onPressed: () {},
-              child: Text("清除".i18n),
-            ),
+            trailing: OutlinedButton(onPressed: () {}, child: Text("清除".i18n)),
           ),
           // SwitchListTile(
           //   value: controller.settings.comicSearchUseWebApi.value,
@@ -101,27 +99,34 @@ class SettingsPage extends StatelessWidget {
                 controller.setSubscribeNotify(e);
               },
               title: Text("订阅更新提醒".i18n),
-              subtitle: Text("订阅的漫画有新话时发送通知，需要登录".i18n),
+              subtitle: Text(
+                (SubscribeNotifyScheduler.intervalSupported
+                        ? "订阅的漫画有新话时发送通知，需要登录"
+                        : "需要登录；打开应用时检查，后台检查时间由 iOS 决定")
+                    .i18n,
+              ),
             ),
             if (controller.settings.subscribeNotify.value) ...[
-              ListTile(
-                title: Text("检查间隔".i18n),
-                subtitle: Slider(
-                  value:
-                      controller.settings.subscribeNotifyHours.value.toDouble(),
-                  min: 1,
-                  max: 24,
-                  divisions: 23,
-                  label: "${controller.settings.subscribeNotifyHours.value} 小时"
-                      .i18n,
-                  onChanged: (e) {
-                    controller.setSubscribeNotifyHours(e.toInt());
-                  },
+              if (SubscribeNotifyScheduler.intervalSupported)
+                ListTile(
+                  title: Text("检查间隔".i18n),
+                  subtitle: Slider(
+                    value: controller.settings.subscribeNotifyHours.value
+                        .toDouble(),
+                    min: 1,
+                    max: 24,
+                    divisions: 23,
+                    label:
+                        "${controller.settings.subscribeNotifyHours.value} 小时"
+                            .i18n,
+                    onChanged: (e) {
+                      controller.setSubscribeNotifyHours(e.toInt());
+                    },
+                  ),
+                  trailing: Text(
+                    "${controller.settings.subscribeNotifyHours.value} 小时".i18n,
+                  ),
                 ),
-                trailing: Text(
-                  "${controller.settings.subscribeNotifyHours.value} 小时".i18n,
-                ),
-              ),
               ListTile(
                 title: Text("立即检查".i18n),
                 subtitle: Text("马上跑一次检查，用来确认通知是否正常".i18n),
@@ -147,7 +152,8 @@ class SettingsPage extends StatelessWidget {
               controller.settings.setEInkMode(e);
             },
             title: Text("E-Ink 模式".i18n),
-            subtitle: Text("关闭翻页动画和首页轮播，开启音量键翻页".i18n),
+            subtitle: Text(
+                (Platform.isIOS ? "关闭翻页动画和首页轮播" : "关闭翻页动画和首页轮播，开启音量键翻页").i18n),
           ),
           SwitchListTile(
             value: controller.settings.useSystemFontSize.value,
@@ -165,13 +171,14 @@ class SettingsPage extends StatelessWidget {
             title: Text("自动收藏神隐漫画".i18n),
             subtitle: Text("浏览神隐漫画时自动添加到本机收藏".i18n),
           ),
-          SwitchListTile(
-            value: controller.settings.readerVolumeKeyTurnPage.value,
-            onChanged: (e) {
-              controller.settings.setReaderVolumeKeyTurnPage(e);
-            },
-            title: Text("音量键翻页".i18n),
-          ),
+          if (!Platform.isIOS)
+            SwitchListTile(
+              value: controller.settings.readerVolumeKeyTurnPage.value,
+              onChanged: (e) {
+                controller.settings.setReaderVolumeKeyTurnPage(e);
+              },
+              title: Text("音量键翻页".i18n),
+            ),
           SwitchListTile(
             value: controller.settings.readerKeepScreenOn.value,
             onChanged: (e) {
@@ -236,7 +243,7 @@ class SettingsPage extends StatelessWidget {
                   },
                   selected: controller.settings.comicReaderDirection.value == 1,
                   child: const Icon(Remix.arrow_down_line),
-                )
+                ),
               ],
             ),
           ),
@@ -338,7 +345,7 @@ class SettingsPage extends StatelessWidget {
                   },
                   selected: controller.settings.novelReaderDirection.value == 1,
                   child: const Icon(Remix.arrow_down_line),
-                )
+                ),
               ],
             ),
           ),
@@ -382,10 +389,7 @@ class SettingsPage extends StatelessWidget {
                       controller.settings.novelReaderFontSize.value + 1,
                     );
                   },
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.grey,
-                  ),
+                  child: const Icon(Icons.add, color: Colors.grey),
                 ),
                 AppStyle.hGap12,
                 Text("${controller.settings.novelReaderFontSize.value}"),
@@ -396,10 +400,7 @@ class SettingsPage extends StatelessWidget {
                       controller.settings.novelReaderFontSize.value - 1,
                     );
                   },
-                  child: const Icon(
-                    Icons.remove,
-                    color: Colors.grey,
-                  ),
+                  child: const Icon(Icons.remove, color: Colors.grey),
                 ),
               ],
             ),
@@ -408,10 +409,7 @@ class SettingsPage extends StatelessWidget {
             title: Text("字体".i18n),
             subtitle: Text(controller.settings.novelReaderFontName),
             onTap: controller.showNovelReaderFontDialog,
-            trailing: const Icon(
-              Icons.chevron_right,
-              color: Colors.grey,
-            ),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
           ),
           ListTile(
             title: Text("行距".i18n),
@@ -424,14 +422,13 @@ class SettingsPage extends StatelessWidget {
                       controller.settings.novelReaderLineSpacing.value + 0.1,
                     );
                   },
-                  child: const Icon(
-                    Icons.add,
-                    color: Colors.grey,
-                  ),
+                  child: const Icon(Icons.add, color: Colors.grey),
                 ),
                 AppStyle.hGap12,
-                Text((controller.settings.novelReaderLineSpacing.value)
-                    .toStringAsFixed(1)),
+                Text(
+                  (controller.settings.novelReaderLineSpacing.value)
+                      .toStringAsFixed(1),
+                ),
                 AppStyle.hGap12,
                 OutlinedButton(
                   onPressed: () {
@@ -439,10 +436,7 @@ class SettingsPage extends StatelessWidget {
                       controller.settings.novelReaderLineSpacing.value - 0.1,
                     );
                   },
-                  child: const Icon(
-                    Icons.remove,
-                    color: Colors.grey,
-                  ),
+                  child: const Icon(Icons.remove, color: Colors.grey),
                 ),
               ],
             ),
@@ -540,10 +534,7 @@ class SettingsPage extends StatelessWidget {
                       : controller.settings.downloadComicTaskCount.toString(),
                 ),
                 AppStyle.hGap4,
-                const Icon(
-                  Icons.chevron_right,
-                  color: Colors.grey,
-                ),
+                const Icon(Icons.chevron_right, color: Colors.grey),
               ],
             ),
           ),
@@ -561,10 +552,7 @@ class SettingsPage extends StatelessWidget {
                       : controller.settings.downloadNovelTaskCount.toString(),
                 ),
                 AppStyle.hGap4,
-                const Icon(
-                  Icons.chevron_right,
-                  color: Colors.grey,
-                ),
+                const Icon(Icons.chevron_right, color: Colors.grey),
               ],
             ),
           ),
@@ -573,14 +561,15 @@ class SettingsPage extends StatelessWidget {
     );
   }
 
-  Widget buildSelectedButton(
-      {required Widget child, bool selected = false, Function()? onTap}) {
+  Widget buildSelectedButton({
+    required Widget child,
+    bool selected = false,
+    Function()? onTap,
+  }) {
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
         foregroundColor: selected ? Colors.blue : Colors.grey,
-        side: BorderSide(
-          color: selected ? Colors.blue : Colors.grey,
-        ),
+        side: BorderSide(color: selected ? Colors.blue : Colors.grey),
       ),
       onPressed: onTap,
       child: child,

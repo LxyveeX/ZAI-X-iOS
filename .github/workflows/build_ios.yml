@@ -1,0 +1,69 @@
+name: Build iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, zaimanhua, ios-port]
+    paths:
+      - 'ios/**'
+      - 'lib/**'
+      - 'test/**'
+      - 'pubspec.*'
+      - 'scripts/ios/**'
+      - '.github/workflows/build_ios.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Test and build unsigned iPhone / iPad IPA
+    runs-on: macos-26
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+      - name: Restore locked dependencies
+        run: flutter pub get --enforce-lockfile
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+      - name: Test
+        run: flutter test --reporter expanded
+      - name: Build release for physical devices
+        run: >-
+          flutter build ios --release --no-codesign
+          --dart-define=ZAI_IOS_REPOSITORY=${{ github.repository }}
+      - name: Verify and package IPA
+        run: python3 scripts/ios/package_ipa.py
+      - name: Build iPad simulator app
+        run: >-
+          flutter build ios --simulator --debug --no-codesign
+          --dart-define=ZAI_IOS_REPOSITORY=${{ github.repository }}
+      - name: Launch on iPad simulator
+        run: python3 scripts/ios/smoke_simulator.py
+      - name: Upload IPA and verification files
+        uses: actions/upload-artifact@v7
+        with:
+          name: ZAI-X-iOS-unsigned
+          path: dist/ios/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-diagnostics
+          path: |
+            dist/ios/
+            build/ios/iphonesimulator/Runner.app/Info.plist
+            ios/Podfile.lock
+          if-no-files-found: ignore
+          retention-days: 7

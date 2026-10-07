@@ -16,14 +16,16 @@ class CategoryDetailController
   /// 只在服务端出现了本地标签表还没收录的新标签时用来兜底显示。
   final String? entryTagName;
 
-  CategoryDetailController(this.id, {this.entryTagName});
+  CategoryDetailController(this.id, {this.entryTagName, ComicRequest? request})
+    : request = request ?? ComicRequest();
 
-  final ComicRequest request = ComicRequest();
+  final ComicRequest request;
+  Future<void>? _filterLoad;
   RxList<ComicCategoryFilterModel> filters = RxList<ComicCategoryFilterModel>();
 
   @override
   void onInit() {
-    loadFilter();
+    _filterLoad = loadFilter();
     super.onInit();
   }
 
@@ -79,7 +81,7 @@ class CategoryDetailController
     refreshData();
   }
 
-  void loadFilter() async {
+  Future<void> loadFilter() async {
     try {
       var groups = await request.categoryFilter();
       groups.insert(
@@ -130,6 +132,9 @@ class CategoryDetailController
 
   @override
   Future<List<ComicCategoryComicModel>> getData(int page, int pageSize) async {
+    // The first refresh can run before the filter API has replied. Wait for the
+    // entry tag's dimension, otherwise a status/region ID is sent as a theme.
+    await (_filterLoad ??= loadFilter());
     if (filters.isEmpty) {
       return await request.categoryComic(id: id, page: page);
     }
