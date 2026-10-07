@@ -15,11 +15,24 @@
 - iOS plist、工作流 YAML、Python 构建脚本语法检查通过。
 - 图标文件存在且像素尺寸符合 Asset Catalog 声明。
 
-## 待在 macOS 构建机完成
+## macOS / Xcode 验证已完成
 
-- Xcode 编译、CocoaPods 原生链接。
-- Release 真机 arm64 文件及 IPA 结构检查。
-- iPad 模拟器启动与截图检查。
+[GitHub Actions 构建 #1](https://github.com/LxyveeX/ZAI-X-iOS/actions/runs/37649366765)
+全部成功，实际构建提交为 `a0e3a0892776bb5eaf8bce0e3915f9e6ed686ffe`。
+
+- macOS 上的静态分析与测试通过：225 项通过，5 项 Windows 专用测试跳过。
+- Xcode 真机 Release 和模拟器 Debug 编译、CocoaPods 原生链接通过。
+- IPA 为 27,599,391 字节，版本 2.4.1 (24001)，Bundle ID 为 `com.lxyveex.zaix`。
+- IPA 结构、ZIP 完整性与 SHA-256 检查通过；支持 iPhone 与 iPad，最低系统版本 15.0。
+- 对下载到本地的 IPA 再次检查 15 个 Mach-O 原生文件，全部为 iOS arm64，最低系统版本均不高于 15.0。
+- iPad Pro 13-inch (M5) 模拟器成功安装、启动，进程在 15 秒后仍存活。
+- 已人工查看启动截图：显示再漫画首页、网络封面和首次启动免责声明；未代用户接受声明。
+
+IPA 的 SHA-256：
+
+```text
+9403844b37b5a64af4068568de618e807f442d089efc3618524133e19adf381c
+```
 
 ## 待实际设备验证
 
@@ -27,4 +40,4 @@
 - 登录、书架同步、连续翻页、双页阅读、下载、分享和相册权限。
 - 订阅通知与系统后台刷新。
 
-Linux 上的 Dart / Flutter 测试不覆盖原生插件的 iOS 实际行为。
+模拟器验证覆盖首次启动；iPadOS 16.7 真机上的签名、账号操作和完整阅读流程仍需实机确认。

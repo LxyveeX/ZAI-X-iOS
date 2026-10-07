@@ -1,8 +1,10 @@
 # 再漫画X（ZAI-X）
 
 > **iOS 适配分支**：基于 funkeyyou v2.4.0，补充 iPhone / iPad 构建与平台适配。
-> 安装、构建及验证范围见 [iOS 说明](docs/IOS.md)。在 Actions 运行 **Build iOS IPA**
-> 可生成供个人证书重新签名的 IPA。下面保留上游项目介绍及 Android / Windows 下载链接。
+> **2.4.1 IPA 已构建成功**：[下载构建附件](https://github.com/LxyveeX/ZAI-X-iOS/actions/runs/37649366765)
+> （页面底部 `ZAI-X-iOS-unsigned`，需登录 GitHub；附件保留 30 天）。解压后用自己的证书签名安装。
+> 最低 iOS / iPadOS 15.0。安装方式见 [iOS 说明](docs/IOS.md)，测试范围见 [验证记录](docs/IOS_VALIDATION.md)。
+> 在 Actions 运行 **Build iOS IPA** 可重新构建。下面保留上游项目介绍及 Android / Windows 下载链接。
 
 [简体中文](README.md) · [繁體中文](README.zh-TW.md) · [English](README.en.md) · [下载 Releases](https://github.com/funkeyyou/zaimanhua/releases/latest) · [问题反馈](https://github.com/funkeyyou/zaimanhua/issues)
 
