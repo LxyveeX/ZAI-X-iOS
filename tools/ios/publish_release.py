@@ -40,6 +40,24 @@ def sha256(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def find_release(repository, tag):
+    release = api(f'repos/{repository}/releases/tags/{tag}', missing_ok=True)
+    if release is not None:
+        return release
+    # The tag lookup excludes drafts. Listing includes drafts for this write token,
+    # allowing an interrupted upload to resume the same release.
+    page = 1
+    while True:
+        releases = api(f'repos/{repository}/releases?per_page=100&page={page}')
+        matches = [item for item in releases if item['tag_name'] == tag]
+        require(len(matches) <= 1, 'Multiple draft releases use the same tag.')
+        if matches:
+            return matches[0]
+        if len(releases) < 100:
+            return None
+        page += 1
+
+
 def validate_run(run, repository):
     require(run.get('status') == 'completed' and run.get('conclusion') == 'success',
             'The iOS build must have completed successfully.')
@@ -174,8 +192,7 @@ def publish(repository, run_id):
         tag = (f'ios-v{info["version"]}-run{run["run_number"]}-'
                f'{run["id"]}-a{run["run_attempt"]}')
         ensure_tag(repository, tag, run['head_sha'])
-        endpoint = f'repos/{repository}/releases/tags/{tag}'
-        release = api(endpoint, missing_ok=True)
+        release = find_release(repository, tag)
         if release is None:
             notes = folder / 'release-notes.md'
             notes.write_text(release_notes(info, run, repository), encoding='utf-8')
@@ -183,8 +200,10 @@ def publish(repository, run_id):
                '--latest=false', '--target', run['head_sha'],
                '--title', f'iOS {info["version"]} · 构建 #{run["run_number"]}（预览版）',
                '--notes-file', notes)
-            release = api(endpoint)
+            release = find_release(repository, tag)
 
+        require(release is not None, 'Created release was not found.')
+        endpoint = f'repos/{repository}/releases/{release["id"]}'
         require(release['prerelease'], 'Refusing to change an existing stable release.')
         remote_assets = {asset['name']: asset for asset in release['assets']}
         for local in assets:
