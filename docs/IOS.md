@@ -9,8 +9,8 @@
 面向 iPhone、iPad，最低系统版本设为 iOS / iPadOS 15.0，包含 iPadOS 16.7。
 构建产物 `ZAI-X-iOS-2.4.1-unsigned.ipa` 需要先使用自己的证书签名，再安装。
 
-1. 下载并解压 Actions 的 `ZAI-X-iOS-unsigned` 附件。
-2. 把其中的 `.ipa` 导入已有的 iOS 签名工具。
+1. 在本仓库的 [Releases](https://github.com/LxyveeX/ZAI-X-iOS/releases) 选择需要的预览版，从 Assets 下载 `.ipa`。
+2. 把 `.ipa` 导入已有的 iOS 签名工具。
 3. 选择自己的有效证书与描述文件，签名后安装。
 4. 打开应用，登录再漫画账号；分类、订阅及阅读权限由服务端和账号状态决定。
 
@@ -42,6 +42,16 @@ macOS 环境需安装 Xcode、CocoaPods 和一个可用的 iPad Simulator。
 GitHub Actions 中运行 **Build iOS IPA**。该流程依次执行锁定依赖恢复、静态分析、
 Flutter 测试、真机 Release 编译、IPA 结构与 arm64 检查、iPad 模拟器启动检查。
 产物附 SHA-256、构建提交信息和模拟器截图。
+
+构建成功后，**Publish iOS Release** 自动将同一份 IPA 及验证附件存入独立的
+GitHub 预览版 Release。标签包含版本号、构建序号、运行 ID 与重跑次数，旧版本保留。
+发布前核对来源提交、IPA SHA-256 与已上传附件；重复发布同一构建不会覆盖已有文件。
+尚未完成真机测试的自动构建始终标为预览版，在 Releases 手动下载。
+
+补发已有构建：在 Actions 选择 **Publish iOS Release → Run workflow**，填入
+**Build iOS IPA** 页面 URL 最后的运行 ID；留空则选最近一次成功构建。
+此操作复用仍未过期的 Actions 附件，无需重新编译。Actions 临时附件保留 30 天，
+Release 附件不会随该临时附件到期而删除。
 
 本地构建命令（将最后一项替换为自己的 GitHub 仓库）：
 

@@ -1,0 +1,42 @@
+name: Publish iOS Release
+
+on:
+  workflow_run:
+    workflows: ['Build iOS IPA']
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Build iOS IPA run ID (blank: latest successful build)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-release-${{ github.event.workflow_run.id || inputs.run_id || 'latest' }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Check out trusted publishing code
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Verify IPA and archive a preview release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BUILD_RUN_ID: ${{ github.event.workflow_run.id || inputs.run_id }}
+        run: python3 tools/ios/publish_release.py
